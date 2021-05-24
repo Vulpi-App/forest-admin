@@ -6,24 +6,17 @@ module.exports = (mongoose, Mongoose) => {
   // Learn more here: https://docs.forestadmin.com/documentation/v/v6/reference-guide/models/enrich-your-models#declaring-a-new-field-in-a-model
   const schema = Mongoose.Schema(
     {
-      title: { type: String, required: true },
-      emoji: String,
-      owner: { type: Mongoose.Schema.Types.ObjectId, ref: "users" },
-      products: [
-        {
-          reference: { type: Mongoose.Schema.Types.ObjectId, ref: "products" },
-          quantity: String,
-          brand: String,
-          shop: String,
-          price: String,
-          added: Boolean,
-        },
-      ],
+      name: { type: String, required: true },
+      picture: { type: Mongoose.Schema.Types.Mixed, default: {} },
+      ean: Number,
+      nutriScore: { type: String, default: "" },
+      ecoScore: { type: String, default: "" },
+      promotions: { type: Object, default: {} },
     },
     {
       timestamps: false,
     }
   );
 
-  return mongoose.model("lists", schema, "lists");
+  return mongoose.model("products", schema, "products");
 };

@@ -14,7 +14,10 @@ const {
 
 const app = express();
 
+// Import des routes
 const usersRoute = require("./api/users");
+const listsRoute = require("./api/lists");
+const productsRoute = require("./api/products");
 
 let allowedOrigins = [/\.forestadmin\.com$/, /localhost:\d{4}$/];
 
@@ -45,7 +48,10 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
+// Utilisation des routes importées dans app
 app.use(usersRoute);
+app.use(listsRoute);
+app.use(productsRoute);
 
 app.use(
   jwt({

@@ -77,7 +77,7 @@ router.post("/api/user/signup", async (req, res) => {
       } else {
         res
           .status(400)
-          .json({ error: "An account already exists with this email " });
+          .json({ error: "An account already exists with this email" });
       }
     } else {
       res.status(400).json({ error: "Missing parameter" });
@@ -134,6 +134,16 @@ router.delete("/api/user/delete/:id", isAuthenticated, async (req, res) => {
       // Check if the token of userToDelete is the same as the one sent in the headers
       const tokenInHeaders = req.headers.authorization.replace("Bearer ", "");
       if (userToDelete.token === tokenInHeaders) {
+        // Check if the user has an avatar
+        if (userToDelete.account.avatar.public_id) {
+          // Delete avatar from Cloudinary
+          await cloudinary.api.delete_resources(
+            userToDelete.account.avatar.public_id
+          );
+
+          // Delete folder from Cloudinary
+          await cloudinary.api.delete_folder(`/vulpi/users/${req.params.id}`);
+        }
         // Delete user from DB
         await userToDelete.delete();
 
@@ -172,7 +182,18 @@ router.put("/api/user/update/:id", isAuthenticated, async (req, res) => {
 
         if (userToUpdate.token === tokenInHeaders) {
           if (email) {
-            userToUpdate.email = email;
+            // Check if the user has provided a different email than the one in DB
+            if (email !== userToUpdate.email) {
+              // Check if email already in DB
+              const userWithEmail = await users.findOne({ email: email });
+              if (!userWithEmail) {
+                userToUpdate.email = email;
+              } else {
+                res
+                  .status(400)
+                  .json({ error: "An account already exists with this email" });
+              }
+            }
           }
 
           if (firstName) {
@@ -208,10 +229,10 @@ router.put("/api/user/update/:id", isAuthenticated, async (req, res) => {
 
           if (req.files.avatar) {
             // Check if the user already has an avatar
-            if (userToUpdate.account.avatar.secure_url) {
+            if (userToUpdate.account.avatar.public_id) {
               // Delete previous avatar from Cloudinary
-              await cloudinary.api.delete_resources_by_prefix(
-                `/vulpi/users/${req.params.id}`
+              await cloudinary.api.delete_resources(
+                userToUpdate.account.avatar.public_id
               );
             }
 
@@ -239,6 +260,58 @@ router.put("/api/user/update/:id", isAuthenticated, async (req, res) => {
       }
     } else {
       res.status(400).json({ error: "No parameters to modify" });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Route to Authenticate with Apple
+router.post("/api/user/applauth", async (req, res) => {
+  try {
+    const { appleId, firstName, lastName, email } = req.fields;
+    if (appleId) {
+      if (email) {
+        // Check if email already in DB
+        const userWithEmail = await users.findOne({ email: email });
+
+        // Create a new user
+        if (!userWithEmail) {
+          const newUser = new users({
+            email: email,
+            newsletter: false,
+            emailConfirm: false,
+            firstConnection: true,
+            account: {
+              firstName: firstName,
+              lastName: lastName,
+            },
+          });
+        } else {
+          res
+            .status(400)
+            .json({ error: "An account already exists with this email" });
+        }
+      } else {
+      }
+
+      // Create a new default list "Ma liste de courses"
+      const newList = new lists({
+        title: "Ma liste de courses",
+        emoji: "🥑",
+        owner: newUser,
+      });
+
+      // Add a reference to the list to the new user
+      newUser.lists = newList;
+
+      //Save new user and list
+      await newUser.save();
+      await newList.save();
+
+      // Respond to the client
+    } else {
+      res.status(400).json({ error: "Missing Apple Id" });
     }
   } catch (error) {
     res.status(400).json({ error: error.message });

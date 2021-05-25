@@ -8,7 +8,7 @@ const encBase64 = require("crypto-js/enc-base64");
 router.use(formidable());
 
 const { users, products, lists } = require("../models");
-// console.log(users);
+const isAuthenticated = require("./middleware/isAuthenticated");
 
 // Pas de app.use("formidable") si cette syntaxe : router.get("/api/users", formidable(), async (req, res) => {
 
@@ -30,8 +30,6 @@ router.post("/api/user/signup", async (req, res) => {
         const salt = uid2(16);
         const hash = SHA256(salt + password).toString(encBase64);
 
-        // Create a new default list "Ma liste de course"
-
         // Create a new user in BD
         const newUser = new users({
           email: email,
@@ -46,8 +44,19 @@ router.post("/api/user/signup", async (req, res) => {
           firstConnection: true,
         });
 
-        //Save new user
+        // Create a new default list "Ma liste de courses"
+        const newList = new lists({
+          title: "Ma liste de courses",
+          emoji: "🥑",
+          owner: newUser,
+        });
+
+        // Add a reference to the list to the new user
+        newUser.lists = newList;
+
+        //Save new user and list
         await newUser.save();
+        await newList.save();
 
         // Respond to client
         res.status(201).json({
@@ -109,12 +118,33 @@ router.post("/api/user/login", async (req, res) => {
 });
 
 // Route to delete a user
-router.delete("/api/user/delete/:id", async (req, res) => {
+router.delete("/api/user/delete/:id", isAuthenticated, async (req, res) => {
   try {
+    // Check if ID in params corresponds to a user
+    const userToDelete = await users.findById(req.params.id);
+
+    if (userToDelete) {
+      // Check if the token of userToDelete is the same as the one sent in the headers
+      const tokenInHeaders = req.headers.authorization.replace("Bearer ", "");
+      if (userToDelete.token === tokenInHeaders) {
+        // Delete user from DB
+        await userToDelete.delete();
+
+        // Respond to the client
+        res.status(200).json({ message: "User successfully deleted" });
+      } else {
+        res.status(401).json({ error: "Unauthorized" });
+      }
+    } else {
+      res.status(400).json({ error: "This user doesn't exist" });
+    }
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
+
+// Route to modify a user
+router.put("/api/user/update/:id", isAuthenticated, async (req, res) => {});
 
 // Route to get all users
 router.get("/api/users", async (req, res) => {

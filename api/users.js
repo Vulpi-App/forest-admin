@@ -4,8 +4,15 @@ const router = express.Router();
 const uid2 = require("uid2");
 const SHA256 = require("crypto-js/sha256");
 const encBase64 = require("crypto-js/enc-base64");
+const cloudinary = require("cloudinary").v2;
 
 router.use(formidable());
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const { users, products, lists } = require("../models");
 const isAuthenticated = require("./middleware/isAuthenticated");
@@ -144,7 +151,99 @@ router.delete("/api/user/delete/:id", isAuthenticated, async (req, res) => {
 });
 
 // Route to modify a user
-router.put("/api/user/update/:id", isAuthenticated, async (req, res) => {});
+router.put("/api/user/update/:id", isAuthenticated, async (req, res) => {
+  try {
+    const { email, firstName, lastName, sex, birthDate, newsletter } =
+      req.fields;
+    if (
+      email ||
+      firstName ||
+      lastName ||
+      sex ||
+      birthDate ||
+      req.files.avatar ||
+      newsletter
+    ) {
+      // Check if ID in params corresponds to a user
+      const userToUpdate = await users.findById(req.params.id);
+      if (userToUpdate) {
+        // Check if the token of userToUpdate is the same as the one sent in the headers
+        const tokenInHeaders = req.headers.authorization.replace("Bearer ", "");
+
+        if (userToUpdate.token === tokenInHeaders) {
+          if (email) {
+            userToUpdate.email = email;
+          }
+
+          if (firstName) {
+            userToUpdate.account.firstName = firstName;
+          }
+
+          if (lastName) {
+            userToUpdate.account.lastName = lastName;
+          }
+
+          if (sex) {
+            if (
+              sex === "female" ||
+              sex === "male" ||
+              sex === "other" ||
+              sex === "not answered"
+            ) {
+              userToUpdate.account.sex = sex;
+            } else {
+              res.status(400).json({ error: "Wrong value for this parameter" });
+            }
+          }
+
+          if (birthDate) {
+            userToUpdate.account.birthDate = birthDate;
+          }
+
+          if (newsletter === "true") {
+            userToUpdate.newsletter = true;
+          } else if (newsletter === "false") {
+            userToUpdate.newsletter = false;
+          }
+
+          if (req.files.avatar) {
+            // Check if the user already has an avatar
+            if (userToUpdate.account.avatar.secure_url) {
+              // Delete previous avatar from Cloudinary
+              await cloudinary.api.delete_resources_by_prefix(
+                `/vulpi/users/${req.params.id}`
+              );
+            }
+
+            // Add new picture to Cloudinary
+            const result = await cloudinary.uploader.upload(
+              req.files.avatar.path,
+              { folder: `/vulpi/users/${req.params.id}` }
+            );
+
+            // Modify info about the avatar of user
+            userToUpdate.account.avatar = result;
+          }
+          // Save updates in DB
+          await userToUpdate.save();
+
+          // Respond to client
+          res
+            .status(200)
+            .json({ message: "User account successfully modified" });
+        } else {
+          res.status(401).json({ error: "Unauthorized" });
+        }
+      } else {
+        res.status(400).json({ error: "This user doesn't exist" });
+      }
+    } else {
+      res.status(400).json({ error: "No parameters to modify" });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
 // Route to get all users
 router.get("/api/users", async (req, res) => {

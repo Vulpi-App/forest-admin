@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const { products } = require("../models");
-console.log(products);
+// console.log(products);
 
 // Pas de app.use("formidable") si cette syntaxe : router.get("/api/users", formidable(), async (req, res) => {
 

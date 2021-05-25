@@ -17,10 +17,10 @@ router.post("/api/user/signup", async (req, res) => {
   try {
     // Destructuring of req.fields
     const { email, firstName, password } = req.fields;
-    console.log(req.fields);
-    // Check if all body params sent
-    if (email && firstName) {
-      // Check if an account with this email already exists in DB
+
+    // Check if all aprameters are sent in Form Data
+    if (email && firstName && password) {
+      // Check if email already in DB
       const userWithEmail = await users.findOne({ email: email });
 
       if (!userWithEmail) {
@@ -31,6 +31,7 @@ router.post("/api/user/signup", async (req, res) => {
         const hash = SHA256(salt + password).toString(encBase64);
 
         // Create a new default list "Ma liste de course"
+
         // Create a new user in BD
         const newUser = new users({
           email: email,
@@ -52,8 +53,9 @@ router.post("/api/user/signup", async (req, res) => {
         res.status(201).json({
           _id: newUser._id,
           token: newUser.token,
+          email: newUser.email,
           account: {
-            firstName: users.account.firstName,
+            firstName: newUser.account.firstName,
           },
         });
       } else {
@@ -64,12 +66,57 @@ router.post("/api/user/signup", async (req, res) => {
     } else {
       res.status(400).json({ error: "Missing parameter" });
     }
-    res.status(200).json({ error: "Ca marche" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
 
+// Route Log In with email
+router.post("/api/user/login", async (req, res) => {
+  try {
+    //  Destructuring of req.fields
+    const { email, password } = req.fields;
+    // Check if email and password are sent in body
+    if (email && password) {
+      // Check if a user exists with this email
+      const userWithEmail = await users.findOne({ email: email });
+      if (userWithEmail) {
+        // Create a new hash
+        const newHash = SHA256(userWithEmail.salt + password).toString(
+          encBase64
+        );
+        // Compare hash in DB with new hash
+        if (newHash === userWithEmail.hash) {
+          res.status(200).json({
+            _id: userWithEmail._id,
+            token: userWithEmail.token,
+            account: {
+              firstName: userWithEmail.account.firstName,
+            },
+          });
+        } else {
+          res.status(401).json({ error: "Unauthorized" });
+        }
+      } else {
+        res.status(401).json({ error: "Unauthorized" });
+      }
+    } else {
+      res.status(400).json({ error: "Missing Parameter" });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Route to delete a user
+router.delete("/api/user/delete/:id", async (req, res) => {
+  try {
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Route to get all users
 router.get("/api/users", async (req, res) => {
   try {
     const usersList = await users.find();

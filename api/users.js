@@ -379,6 +379,7 @@ router.post("/api/user/appleauth", async (req, res) => {
 
 /* =================================================== */
 // Route to get all users
+//test
 /* =================================================== */
 
 router.get("/api/users", async (req, res) => {

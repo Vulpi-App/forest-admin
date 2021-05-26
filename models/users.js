@@ -22,6 +22,7 @@ module.exports = (mongoose, Mongoose) => {
       salt: String,
       lists: [{ type: Mongoose.Schema.Types.ObjectId, ref: "lists" }],
       friends: [{ type: Mongoose.Schema.Types.ObjectId, ref: "users" }],
+      products: [{ type: Mongoose.Schema.Types.ObjectId, ref: "products" }],
     },
     {
       timestamps: false,

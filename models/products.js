@@ -6,7 +6,7 @@ module.exports = (mongoose, Mongoose) => {
   // Learn more here: https://docs.forestadmin.com/documentation/v/v6/reference-guide/models/enrich-your-models#declaring-a-new-field-in-a-model
   const schema = Mongoose.Schema(
     {
-      name: { type: String, required: true },
+      name: { type: String, required: true, unique: true },
       picture: { type: Mongoose.Schema.Types.Mixed, default: {} },
       ean: Number,
       nutriScore: { type: String, default: "" },

@@ -7,6 +7,9 @@ const formidable = require("express-formidable");
 router.use(formidable());
 const { users, lists, products } = require("../models");
 
+// Import Middleware
+const isAuthenticated = require("./middleware/isAuthenticated");
+
 // Function async basic
 const funcAsync = (func1, cb) => {
   cb(func1);
@@ -157,36 +160,182 @@ router.put("/lists/update-product/:id", async (req, res) => {
 
 /* =================================================== */
 
-// 1. CREATE a shopping list
-// !! Waiting for middleware isAuthenticated to link user's ref
-router.post("/lists/create", async (req, res) => {
+// 1. CREATE a shopping list ✅
+// EmojisTab to be complete (animals, nature...) ⛔️
+router.post("/lists/create", isAuthenticated, async (req, res) => {
+  const emojisTab = [
+    "🍏",
+    "🍎",
+    "🍐",
+    "🍊",
+    "🍋",
+    "🍌",
+    "🍉",
+    "🍇",
+    "🍓",
+    "🫐",
+    "🍈",
+    "🍒",
+    "🍑",
+    "🥭",
+    "🍍",
+    "🥥",
+    "🥝",
+    "🍅",
+    "🍆",
+    "🥑",
+    "🥦",
+    "🥬",
+    "🥒",
+    "🌶",
+    "🫑",
+    "🌽",
+    "🥕",
+    "🫒",
+    "🧄",
+    "🧅",
+    "🥔",
+    "🍠",
+    "🥐",
+    "🥯",
+    "🍞",
+    "🥖",
+    "🥨",
+    "🧀",
+    "🥚",
+    "🍳",
+    "🧈",
+    "🥞",
+    "🧇",
+    "🥓",
+    "🥩",
+    "🍗",
+    "🍖",
+    "🦴",
+    "🌭",
+    "🍔",
+    "🍟",
+    "🍕",
+    "🫓",
+    "🥪",
+    "🥙",
+    "🧆",
+    "🌮",
+    "🌯",
+    "🫔",
+    "🥗",
+    "🥘",
+    "🥘",
+    "🫕",
+    "🥫",
+    "🍝",
+    "🍜",
+    "🍲",
+    "🍛",
+    "🍣",
+    "🍱",
+    "🥟",
+    "🦪",
+    "🍤",
+    "🍙",
+    "🍚",
+    "🍘",
+    "🍥",
+    "🥠",
+    "🥮",
+    "🍢",
+    "🍡",
+    "🍧",
+    "🍨",
+    "🍦",
+    "🥧",
+    "🧁",
+    "🍰",
+    "🎂",
+    "🍮",
+    "🍭",
+    "🍬",
+    "🍫",
+    "🍿",
+    "🍩",
+    "🍪",
+    "🌰",
+    "🥜",
+    "🍯",
+    "🥛",
+    "🍼",
+    "🫖",
+    "☕️",
+    "🍵",
+    "🧃",
+    "🥤",
+    "🧋",
+    "🍶",
+    "🍺",
+    "🍻",
+    "🥂",
+    "🍷",
+    "🥃",
+    "🍸",
+    "🍹",
+    "🧉",
+    "🍾",
+    "🧊",
+    "🥄",
+    "🍴",
+    "🍽",
+    "🥣",
+    "🥡",
+    "🥢",
+    "🧂",
+    "🧸",
+    "🎁",
+    "🎈",
+    "🎀",
+    "🎉",
+    "🛍",
+    "🛒",
+    "🎊",
+    "♥️",
+    "🧡",
+    "💛",
+    "💚",
+    "💙",
+    "💜",
+    "🖤",
+    "🤍",
+    "🤎",
+    "💕",
+    "💞",
+    "💓",
+    "💗",
+    "💖",
+    "💘",
+    "💝",
+  ];
+  console.log(emojisTab.length);
+
   try {
     const { title, emoji } = req.fields;
-    console.log("Bearer token ", req.headers.authorization);
 
     // title & emoji already filled in create list step (so mandatory)
     if (title && emoji) {
       if (title.length < 20) {
-        const newList = new lists({
-          title: title,
-          emoji: emoji,
-          products: [
-            {
-              reference: null,
-              quantity: null,
-              brand: null,
-              shop: null,
-              price: null,
-              added: false,
-            },
-          ],
-          // owner: req.user, (waiting for middleware isAuthenticated)
-        });
+        if (emojisTab.indexOf(emoji) !== -1) {
+          const newList = new lists({
+            title: title,
+            emoji: emoji,
+            owner: req.user,
+          });
 
-        // Save new list in BDD
-        await newList.save();
-        // Send response to client
-        res.status(200).json({ message: "List created successfully" });
+          // Save new list in BDD
+          await newList.save();
+
+          // Send response to client
+          res.status(200).json({ message: "List created successfully" });
+        } else {
+          res.status(400).json({ message: "Emoji unauthorised 🤭" });
+        }
       } else {
         res.status(400).json({ message: "Title is too long 😬" });
       }
@@ -200,13 +349,9 @@ router.post("/lists/create", async (req, res) => {
 
 /* =================================================== */
 
-// 2. UPDATE shopping list: title & emoji
-// !! Waiting for middleware isAuthenticated
-router.put("/lists/update/:id", async (req, res) => {
+// 2. UPDATE shopping list: title & emoji ✅
+router.put("/lists/update/:id", isAuthenticated, async (req, res) => {
   try {
-    // console.log(req.params); // List's id
-    // console.log(req.fields); // list's items to update
-
     const { title, emoji } = req.fields;
 
     // Looking for a list with corresponding ID in BDD
@@ -226,9 +371,9 @@ router.put("/lists/update/:id", async (req, res) => {
 
     // Save update list in BDD
     await listToUpdate.save();
+
     // Send response to client
     res.status(200).json({ message: "List update successfully 🥳" });
-    // res.status(200).json(listToUpdate);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -236,15 +381,15 @@ router.put("/lists/update/:id", async (req, res) => {
 
 /* =================================================== */
 
-/* =================================================== */
-
-// 3. DELETE a shopping list
-router.delete("/lists/delete/:id", async (req, res) => {
+// 3. DELETE a shopping list ✅
+router.delete("/lists/delete/:id", isAuthenticated, async (req, res) => {
   try {
     // Looking for a list with corresponding ID in BDD
     const listToDelete = await lists.findById(req.params.id);
+
     // Delete list
     await listToDelete.delete();
+
     // Send response to client
     res.status(200).json({ message: "List deleted successfully 👌🏻" });
   } catch (error) {

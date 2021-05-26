@@ -3,9 +3,6 @@ const express = require("express");
 const router = express.Router();
 const formidable = require("express-formidable");
 
-// Use Express-Formidable
-router.use(formidable());
-
 const isAuthenticated = require("./middleware/isAuthenticated");
 const { users, lists, products } = require("../models");
 
@@ -19,7 +16,7 @@ const funcAsync = (func1, cb) => {
 // Route POST to add a product to a list
 // AJOUTER isAuthenticated
 // AJOUTER les photos avec cloudinary
-router.post("/lists/add-product/:id", async (req, res) => {
+router.post("/lists/add-product/:id", formidable(), async (req, res) => {
   try {
     const { nameProduct, quantity, brand, shop, price } = req.fields;
 
@@ -121,7 +118,7 @@ router.post("/lists/add-product/:id", async (req, res) => {
 // AJOUTER isAuthenticated
 // AJOUTER les photos avec cloudinary
 // VOIR si nécessaire d'ajouter un nombre de characters max
-router.put("/lists/update-product/:id", async (req, res) => {
+router.put("/lists/update-product/:id", formidable(), async (req, res) => {
   try {
     const { quantity, brand, shop, price, added } = req.fields;
     const { idProduct } = req.query;
@@ -150,7 +147,7 @@ router.put("/lists/update-product/:id", async (req, res) => {
 
 // 1. CREATE a shopping list
 // !! Waiting for middleware isAuthenticated to link user's ref
-router.post("/lists/create", async (req, res) => {
+router.post("/lists/create", formidable(), async (req, res) => {
   try {
     const { title, emoji } = req.fields;
     console.log("Bearer token ", req.headers.authorization);
@@ -193,7 +190,7 @@ router.post("/lists/create", async (req, res) => {
 
 // 2. UPDATE shopping list: title & emoji
 // !! Waiting for middleware isAuthenticated
-router.put("/lists/update/:id", async (req, res) => {
+router.put("/lists/update/:id", formidable(), async (req, res) => {
   try {
     // console.log(req.params); // List's id
     // console.log(req.fields); // list's items to update
@@ -230,7 +227,7 @@ router.put("/lists/update/:id", async (req, res) => {
 /* =================================================== */
 
 // 3. DELETE a shopping list
-router.delete("/lists/delete/:id", async (req, res) => {
+router.delete("/lists/delete/:id", formidable(), async (req, res) => {
   try {
     // Looking for a list with corresponding ID in BDD
     const listToDelete = await lists.findById(req.params.id);

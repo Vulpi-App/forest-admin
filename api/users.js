@@ -6,8 +6,6 @@ const SHA256 = require("crypto-js/sha256");
 const encBase64 = require("crypto-js/enc-base64");
 const cloudinary = require("cloudinary").v2;
 
-router.use(formidable());
-
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -22,7 +20,7 @@ const isAuthenticated = require("./middleware/isAuthenticated");
 /* =================================================== */
 // Route Sign Up with email
 /* =================================================== */
-router.post("/api/user/signup", async (req, res) => {
+router.post("/api/user/signup", formidable(), async (req, res) => {
   try {
     // Destructuring of req.fields
     const { email, firstName, password } = req.fields;
@@ -92,7 +90,7 @@ router.post("/api/user/signup", async (req, res) => {
 /* =================================================== */
 // Route Log In with email
 /* =================================================== */
-router.post("/api/user/login", async (req, res) => {
+router.post("/api/user/login", formidable(), async (req, res) => {
   try {
     //  Destructuring of req.fields
     const { email, password } = req.fields;
@@ -131,158 +129,180 @@ router.post("/api/user/login", async (req, res) => {
 /* =================================================== */
 // Route to delete a user
 /* =================================================== */
-router.delete("/api/user/delete/:id", isAuthenticated, async (req, res) => {
-  try {
-    // Check if ID in params corresponds to a user
-    const userToDelete = await users.findById(req.params.id);
-
-    if (userToDelete) {
-      // Check if the token of userToDelete is the same as the one sent in the headers
-      const tokenInHeaders = req.headers.authorization.replace("Bearer ", "");
-      if (userToDelete.token === tokenInHeaders) {
-        // Check if the user has an avatar
-        if (userToDelete.account.avatar.public_id) {
-          // Delete avatar from Cloudinary
-          await cloudinary.api.delete_resources(
-            userToDelete.account.avatar.public_id
-          );
-
-          // Delete folder from Cloudinary
-          await cloudinary.api.delete_folder(`/vulpi/users/${req.params.id}`);
-        }
-        // Delete user from DB
-        await userToDelete.delete();
-
-        // Respond to the client
-        res.status(200).json({ message: "User successfully deleted" });
-      } else {
-        res.status(401).json({ error: "Unauthorized" });
-      }
-    } else {
-      res.status(400).json({ error: "This user doesn't exist" });
-    }
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-/* =================================================== */
-// Route to modify a user
-/* =================================================== */
-router.put("/api/user/update/:id", isAuthenticated, async (req, res) => {
-  try {
-    const { email, firstName, lastName, sex, birthDate, newsletter, password } =
-      req.fields;
-    if (
-      email ||
-      firstName ||
-      lastName ||
-      sex ||
-      birthDate ||
-      req.files.avatar ||
-      newsletter ||
-      password
-    ) {
+router.delete(
+  "/api/user/delete/:id",
+  formidable(),
+  isAuthenticated,
+  async (req, res) => {
+    try {
       // Check if ID in params corresponds to a user
-      const userToUpdate = await users.findById(req.params.id);
-      if (userToUpdate) {
-        // Check if the token of userToUpdate is the same as the one sent in the headers
+      const userToDelete = await users.findById(req.params.id);
+
+      if (userToDelete) {
+        // Check if the token of userToDelete is the same as the one sent in the headers
         const tokenInHeaders = req.headers.authorization.replace("Bearer ", "");
-
-        if (userToUpdate.token === tokenInHeaders) {
-          if (email) {
-            // Check if the user has provided a different email than the one in DB
-            if (email !== userToUpdate.email) {
-              // Check if email already in DB
-              const userWithEmail = await users.findOne({ email: email });
-              if (!userWithEmail) {
-                userToUpdate.email = email;
-              } else {
-                res
-                  .status(400)
-                  .json({ error: "An account already exists with this email" });
-              }
-            }
-          }
-
-          if (firstName) {
-            userToUpdate.account.firstName = firstName;
-          }
-
-          if (lastName) {
-            userToUpdate.account.lastName = lastName;
-          }
-
-          if (sex) {
-            if (
-              sex === "female" ||
-              sex === "male" ||
-              sex === "other" ||
-              sex === "not answered"
-            ) {
-              userToUpdate.account.sex = sex;
-            } else {
-              res.status(400).json({ error: "Wrong value for this parameter" });
-            }
-          }
-
-          if (birthDate) {
-            userToUpdate.account.birthDate = birthDate;
-          }
-
-          if (newsletter === "true") {
-            userToUpdate.newsletter = true;
-          } else if (newsletter === "false") {
-            userToUpdate.newsletter = false;
-          }
-
-          if (password) {
-            userToUpdate.password = password;
-          }
-
-          if (req.files.avatar) {
-            // Check if the user already has an avatar
-            if (userToUpdate.account.avatar.public_id) {
-              // Delete previous avatar from Cloudinary
-              await cloudinary.api.delete_resources(
-                userToUpdate.account.avatar.public_id
-              );
-            }
-
-            // Add new picture to Cloudinary
-            const result = await cloudinary.uploader.upload(
-              req.files.avatar.path,
-              { folder: `/vulpi/users/${req.params.id}` }
+        if (userToDelete.token === tokenInHeaders) {
+          // Check if the user has an avatar
+          if (userToDelete.account.avatar.public_id) {
+            // Delete avatar from Cloudinary
+            await cloudinary.api.delete_resources(
+              userToDelete.account.avatar.public_id
             );
 
-            // Modify info about the avatar of user
-            userToUpdate.account.avatar = result;
+            // Delete folder from Cloudinary
+            await cloudinary.api.delete_folder(`/vulpi/users/${req.params.id}`);
           }
-          // Save updates in DB
-          await userToUpdate.save();
+          // Delete user from DB
+          await userToDelete.delete();
 
-          // Respond to client
-          res
-            .status(200)
-            .json({ message: "User account successfully modified" });
+          // Respond to the client
+          res.status(200).json({ message: "User successfully deleted" });
         } else {
           res.status(401).json({ error: "Unauthorized" });
         }
       } else {
         res.status(400).json({ error: "This user doesn't exist" });
       }
-    } else {
-      res.status(400).json({ error: "No parameters to modify" });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
     }
-  } catch (error) {
-    res.status(400).json({ error: error.message });
   }
-});
+);
+
+/* =================================================== */
+// Route to modify a user
+/* =================================================== */
+router.put(
+  "/api/user/update/:id",
+  formidable(),
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      const {
+        email,
+        firstName,
+        lastName,
+        sex,
+        birthDate,
+        newsletter,
+        password,
+      } = req.fields;
+      if (
+        email ||
+        firstName ||
+        lastName ||
+        sex ||
+        birthDate ||
+        req.files.avatar ||
+        newsletter ||
+        password
+      ) {
+        // Check if ID in params corresponds to a user
+        const userToUpdate = await users.findById(req.params.id);
+        if (userToUpdate) {
+          // Check if the token of userToUpdate is the same as the one sent in the headers
+          const tokenInHeaders = req.headers.authorization.replace(
+            "Bearer ",
+            ""
+          );
+
+          if (userToUpdate.token === tokenInHeaders) {
+            if (email) {
+              // Check if the user has provided a different email than the one in DB
+              if (email !== userToUpdate.email) {
+                // Check if email already in DB
+                const userWithEmail = await users.findOne({ email: email });
+                if (!userWithEmail) {
+                  userToUpdate.email = email;
+                } else {
+                  res.status(400).json({
+                    error: "An account already exists with this email",
+                  });
+                }
+              }
+            }
+
+            if (firstName) {
+              userToUpdate.account.firstName = firstName;
+            }
+
+            if (lastName) {
+              userToUpdate.account.lastName = lastName;
+            }
+
+            if (sex) {
+              if (
+                sex === "female" ||
+                sex === "male" ||
+                sex === "other" ||
+                sex === "not answered"
+              ) {
+                userToUpdate.account.sex = sex;
+              } else {
+                res
+                  .status(400)
+                  .json({ error: "Wrong value for this parameter" });
+              }
+            }
+
+            if (birthDate) {
+              userToUpdate.account.birthDate = birthDate;
+            }
+
+            if (newsletter === "true") {
+              userToUpdate.newsletter = true;
+            } else if (newsletter === "false") {
+              userToUpdate.newsletter = false;
+            }
+
+            if (password) {
+              userToUpdate.password = password;
+            }
+
+            if (req.files.avatar) {
+              // Check if the user already has an avatar
+              if (userToUpdate.account.avatar.public_id) {
+                // Delete previous avatar from Cloudinary
+                await cloudinary.api.delete_resources(
+                  userToUpdate.account.avatar.public_id
+                );
+              }
+
+              // Add new picture to Cloudinary
+              const result = await cloudinary.uploader.upload(
+                req.files.avatar.path,
+                { folder: `/vulpi/users/${req.params.id}` }
+              );
+
+              // Modify info about the avatar of user
+              userToUpdate.account.avatar = result;
+            }
+            // Save updates in DB
+            await userToUpdate.save();
+
+            // Respond to client
+            res
+              .status(200)
+              .json({ message: "User account successfully modified" });
+          } else {
+            res.status(401).json({ error: "Unauthorized" });
+          }
+        } else {
+          res.status(400).json({ error: "This user doesn't exist" });
+        }
+      } else {
+        res.status(400).json({ error: "No parameters to modify" });
+      }
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+);
 
 /* =================================================== */
 // Route to Authenticate with Apple
 /* =================================================== */
-router.post("/api/user/appleauth", async (req, res) => {
+router.post("/api/user/appleauth", formidable(), async (req, res) => {
   try {
     const { appleId, firstName, lastName, email } = req.fields;
     if (appleId) {
@@ -379,10 +399,9 @@ router.post("/api/user/appleauth", async (req, res) => {
 
 /* =================================================== */
 // Route to get all users
-//test
 /* =================================================== */
 
-router.get("/api/users", async (req, res) => {
+router.get("/api/users", formidable(), async (req, res) => {
   try {
     const usersList = await users.find();
     res.status(200).json(usersList);

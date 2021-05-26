@@ -3,7 +3,6 @@ const express = require("express");
 const router = express.Router();
 const formidable = require("express-formidable");
 
-
 // Use Express-Formidable
 router.use(formidable());
 const { users, lists, products } = require("../models");
@@ -13,13 +12,10 @@ const funcAsync = (func1, cb) => {
   cb(func1);
 };
 
-
 /* =================================================== */
-
 
 // All lists
 router.get("/lists", async (req, res) => {
-
   try {
     const shoppingLists = await lists.find();
 
@@ -28,7 +24,6 @@ router.get("/lists", async (req, res) => {
     console.log(error);
   }
 });
-
 
 // Route POST to add a product to a list
 // AJOUTER isAuthenticated
@@ -126,7 +121,9 @@ router.post("/lists/add-product/:id", async (req, res) => {
 
     // Call function async with callback
     funcAsync(checkProductInDBUser, addProduct);
-  } catch (error) {}
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 
 // Route PUT to update a product to a list
@@ -153,6 +150,10 @@ router.put("/lists/update-product/:id", async (req, res) => {
           .json({ message: "Product updated successfully", product: i });
       }
     }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
 /* =================================================== */
 
@@ -235,7 +236,6 @@ router.put("/lists/update/:id", async (req, res) => {
 
 /* =================================================== */
 
-
 /* =================================================== */
 
 // 3. DELETE a shopping list
@@ -247,7 +247,6 @@ router.delete("/lists/delete/:id", async (req, res) => {
     await listToDelete.delete();
     // Send response to client
     res.status(200).json({ message: "List deleted successfully 👌🏻" });
-
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

@@ -19,7 +19,9 @@ const isAuthenticated = require("./middleware/isAuthenticated");
 
 // Pas de app.use("formidable") si cette syntaxe : router.get("/api/users", formidable(), async (req, res) => {
 
+/* =================================================== */
 // Route Sign Up with email
+/* =================================================== */
 router.post("/api/user/signup", async (req, res) => {
   try {
     // Destructuring of req.fields
@@ -87,7 +89,9 @@ router.post("/api/user/signup", async (req, res) => {
   }
 });
 
+/* =================================================== */
 // Route Log In with email
+/* =================================================== */
 router.post("/api/user/login", async (req, res) => {
   try {
     //  Destructuring of req.fields
@@ -124,7 +128,9 @@ router.post("/api/user/login", async (req, res) => {
   }
 });
 
+/* =================================================== */
 // Route to delete a user
+/* =================================================== */
 router.delete("/api/user/delete/:id", isAuthenticated, async (req, res) => {
   try {
     // Check if ID in params corresponds to a user
@@ -160,10 +166,12 @@ router.delete("/api/user/delete/:id", isAuthenticated, async (req, res) => {
   }
 });
 
+/* =================================================== */
 // Route to modify a user
+/* =================================================== */
 router.put("/api/user/update/:id", isAuthenticated, async (req, res) => {
   try {
-    const { email, firstName, lastName, sex, birthDate, newsletter } =
+    const { email, firstName, lastName, sex, birthDate, newsletter, password } =
       req.fields;
     if (
       email ||
@@ -172,7 +180,8 @@ router.put("/api/user/update/:id", isAuthenticated, async (req, res) => {
       sex ||
       birthDate ||
       req.files.avatar ||
-      newsletter
+      newsletter ||
+      password
     ) {
       // Check if ID in params corresponds to a user
       const userToUpdate = await users.findById(req.params.id);
@@ -227,6 +236,10 @@ router.put("/api/user/update/:id", isAuthenticated, async (req, res) => {
             userToUpdate.newsletter = false;
           }
 
+          if (password) {
+            userToUpdate.password = password;
+          }
+
           if (req.files.avatar) {
             // Check if the user already has an avatar
             if (userToUpdate.account.avatar.public_id) {
@@ -266,48 +279,94 @@ router.put("/api/user/update/:id", isAuthenticated, async (req, res) => {
   }
 });
 
+/* =================================================== */
 // Route to Authenticate with Apple
-router.post("/api/user/applauth", async (req, res) => {
+/* =================================================== */
+router.post("/api/user/appleauth", async (req, res) => {
   try {
     const { appleId, firstName, lastName, email } = req.fields;
     if (appleId) {
-      if (email) {
-        // Check if email already in DB
-        const userWithEmail = await users.findOne({ email: email });
-
-        // Create a new user
-        if (!userWithEmail) {
-          const newUser = new users({
-            email: email,
-            newsletter: false,
-            emailConfirm: false,
-            firstConnection: true,
-            account: {
-              firstName: firstName,
-              lastName: lastName,
-            },
-          });
-        } else {
-          res
-            .status(400)
-            .json({ error: "An account already exists with this email" });
-        }
-      } else {
-      }
-
-      // Create a new default list "Ma liste de courses"
-      const newList = new lists({
-        title: "Ma liste de courses",
-        emoji: "🥑",
-        owner: newUser,
+      // Check if Apple Id already in DB, if yes --> log in // if no --> sign up
+      const userWithAppleId = await users.findOne({
+        idThirdPartyAuth: appleId,
       });
+      if (userWithAppleId) {
+        return res.status(200).json({
+          _id: userWithAppleId._id,
+          token: userWithAppleId.token,
+          account: {
+            firstName: userWithAppleId.account.firstName,
+          },
+        });
+      } else {
+        let emailToSignUp;
+        if (email) {
+          // Check if email already in DB
+          const userWithEmail = await users.findOne({ email: email });
 
-      // Add a reference to the list to the new user
-      newUser.lists = newList;
+          if (!userWithEmail) {
+            emailToSignUp = email;
+          } else {
+            return res
+              .status(400)
+              .json({ error: "An account already exists with this email" });
+          }
+        } else {
+          // If no email given with the authentification, a default message will ask the user to give their email adress until it is modified
+          emailToSignUp = "Renseigne ton adresse email ici !";
+        }
 
-      //Save new user and list
-      await newUser.save();
-      await newList.save();
+        let firstNameToSignUp;
+        if (firstName) {
+          firstNameToSignUp = firstName;
+        } else {
+          // If no first name given with the authentitfication, a default first name will be given until the user modifies it
+          firstNameToSignUp = "Vulpi Anonyme";
+        }
+
+        // Generate a token
+        const token = uid2(64);
+        // Create a new user
+        const newUser = new users({
+          email: emailToSignUp,
+          newsletter: false,
+          token: token,
+          emailConfirm: false,
+          firstConnection: true,
+          idThirdPartyAuth: appleId,
+          account: {
+            firstName: firstNameToSignUp,
+          },
+        });
+
+        if (lastName) {
+          newUser.account.lastName = lastName;
+        }
+
+        // Create a new default list "Ma liste de courses"
+        const newList = new lists({
+          title: "Ma liste de courses",
+          emoji: "🥑",
+          owner: newUser,
+        });
+
+        // Add a reference to the list to the new user
+        newUser.lists = newList;
+
+        //Save new user and list
+        await newUser.save();
+        await newList.save();
+
+        // Respond to client
+        return res.status(201).json({
+          _id: newUser._id,
+          token: newUser.token,
+          email: newUser.email,
+          account: {
+            firstName: newUser.account.firstName,
+          },
+        });
+      }
 
       // Respond to the client
     } else {
@@ -318,7 +377,10 @@ router.post("/api/user/applauth", async (req, res) => {
   }
 });
 
+/* =================================================== */
 // Route to get all users
+/* =================================================== */
+
 router.get("/api/users", async (req, res) => {
   try {
     const usersList = await users.find();

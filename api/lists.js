@@ -4,8 +4,6 @@ const router = express.Router();
 const formidable = require("express-formidable");
 const cloudinary = require("cloudinary").v2;
 
-// Use Express-Formidable
-router.use(formidable());
 const { users, lists, products } = require("../models");
 
 // Function async basic
@@ -46,7 +44,7 @@ router.get("/lists", async (req, res) => {
 
 // 1. CREATE a shopping list
 // !! Waiting for middleware isAuthenticated to link user's ref
-router.post("/lists/create", async (req, res) => {
+router.post("/lists/create", formidable(), async (req, res) => {
   try {
     const { title, emoji } = req.fields;
     console.log("Bearer token ", req.headers.authorization);
@@ -89,7 +87,7 @@ router.post("/lists/create", async (req, res) => {
 
 // 2. UPDATE shopping list: title & emoji
 // !! Waiting for middleware isAuthenticated
-router.put("/lists/update/:id", async (req, res) => {
+router.put("/lists/update/:id", formidable(), async (req, res) => {
   try {
     // console.log(req.params); // List's id
     // console.log(req.fields); // list's items to update
@@ -144,186 +142,250 @@ router.delete("/lists/delete/:id", async (req, res) => {
 /* =================================================== */
 
 // 4. Route POST to add a product to a list
-router.post("/lists/add-product/:id", isAuthenticated, async (req, res) => {
-  try {
-    const { nameProduct, quantity, brand, shop, price } = req.fields;
+router.post(
+  "/lists/add-product/:id",
+  formidable(),
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      const { nameProduct, quantity, brand, shop, price } = req.fields;
 
-    const idList = req.params.id;
-    const shoppingList = await lists.findById(idList);
-    const user = req.user;
+      const idList = req.params.id;
+      const shoppingList = await lists.findById(idList);
+      const user = req.user;
 
-    // Add function because code asynchrone
-    const checkProductInDBUser = () => {
-      // Check if the product is already present in User's products database
-      for (let i of user.products) {
-        if (i.name === nameProduct) {
-          return true;
+      // Add function because code asynchrone
+      const checkProductInDBUser = () => {
+        // Check if the product is already present in User's products database
+        for (let i of user.products) {
+          if (i.name === nameProduct) {
+            return true;
+          }
         }
-      }
-    };
+      };
 
-    // Function Add Product
-    const addProduct = async (productAlreadyInDB) => {
-      if (shoppingList) {
-        if (nameProduct) {
-          if (nameProduct.length <= 30) {
-            if (productAlreadyInDB) {
-              // Product exist in user's products database
-              const productToAddList = await products.findOne({
-                name: nameProduct,
-              });
+      // Function Add Product
+      const addProduct = async (productAlreadyInDB) => {
+        if (shoppingList) {
+          if (nameProduct) {
+            if (nameProduct.length <= 30) {
+              if (productAlreadyInDB) {
+                // Product exist in user's products database
+                const productToAddList = await products.findOne({
+                  name: nameProduct,
+                });
 
-              // Add product to shoppingList (array)
-              shoppingList.products.push({
-                reference: productToAddList,
-                quantity: quantity && quantity,
-                brand: brand && brand,
-                shop: shop && shop,
-                price: price && price,
-                added: false,
-              });
-              await shoppingList.save();
-              res
-                .status(200)
-                .json({ message: "Product added to your shopping list" }); // A compléter avec les éléments dont le front aura besoin
-            } else {
-              // Check if the product is already present in products database
-              let productToAdd = await products.findOne({
-                name: nameProduct,
-              });
+                // Add product to shoppingList (array)
+                shoppingList.products.push({
+                  reference: productToAddList,
+                  quantity: quantity && quantity,
+                  brand: brand && brand,
+                  shop: shop && shop,
+                  price: price && price,
+                  added: false,
+                });
+                await shoppingList.save();
+                res
+                  .status(200)
+                  .json({ message: "Product added to your shopping list" }); // A compléter avec les éléments dont le front aura besoin
+              } else {
+                // Check if the product is already present in products database
+                let productToAdd = await products.findOne({
+                  name: nameProduct,
+                });
 
-              if (!productToAdd) {
-                // Product doesn't exist in products database
-                // 1. Product creation in product database
-                productToAdd = new products({ name: nameProduct });
-                await productToAdd.save();
-
-                // If picture is present, add to product in database and to Cloundinary
-                if (req.files.picture) {
-                  console.log(req.files.picture);
-                  const pictureProduct = await cloudinary.uploader.upload(
-                    req.files.picture.path,
-                    { folder: `vulpi/products/${productToAdd.id}` }
-                  );
-                  productToAdd.picture = pictureProduct;
+                if (!productToAdd) {
+                  // Product doesn't exist in products database
+                  // 1. Product creation in product database
+                  productToAdd = new products({ name: nameProduct });
                   await productToAdd.save();
+
+                  // If picture is present, add to product in database and to Cloundinary
+                  if (req.files.picture) {
+                    console.log(req.files.picture);
+                    const pictureProduct = await cloudinary.uploader.upload(
+                      req.files.picture.path,
+                      { folder: `vulpi/products/${productToAdd.id}` }
+                    );
+                    productToAdd.picture = pictureProduct;
+                    await productToAdd.save();
+                  }
                 }
+
+                // 2. Add product to shoppingList (array)
+                shoppingList.products.push({
+                  reference: productToAdd,
+                  quantity: quantity && quantity,
+                  brand: brand && brand,
+                  shop: shop && shop,
+                  price: price && price,
+                  added: false,
+                });
+                await shoppingList.save();
+
+                // 3. Add product to user's products database (array)
+                user.products.push(productToAdd);
+                await user.save();
+
+                res.status(200).json({
+                  message:
+                    "Product added to your shopping list and your products history",
+                }); // A compléter avec les éléments dont le front aura besoin
               }
-
-              // 2. Add product to shoppingList (array)
-              shoppingList.products.push({
-                reference: productToAdd,
-                quantity: quantity && quantity,
-                brand: brand && brand,
-                shop: shop && shop,
-                price: price && price,
-                added: false,
+            } else {
+              res.status(400).json({
+                message: "The product name must not exceed 30 characters",
               });
-              await shoppingList.save();
-
-              // 3. Add product to user's products database (array)
-              user.products.push(productToAdd);
-              await user.save();
-
-              res.status(200).json({
-                message:
-                  "Product added to your shopping list and your products history",
-              }); // A compléter avec les éléments dont le front aura besoin
             }
           } else {
-            res.status(400).json({
-              message: "The product name must not exceed 30 characters",
-            });
+            res.status(400).json({ message: "Please, enter the product name" });
           }
         } else {
-          res.status(400).json({ message: "Please, enter the product name" });
+          res
+            .status(400)
+            .json({ message: "The list you want to modify doesn't exist" });
         }
+      };
+
+      // Call function async with callback
+      funcAsync(checkProductInDBUser, addProduct);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+);
+
+/* =================================================== */
+
+// 5. Route PUT to update a product to a list
+router.put(
+  "/lists/update-product/:id",
+  formidable(),
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      const { quantity, brand, shop, price, added } = req.fields;
+      const { idProduct } = req.query;
+      const idList = req.params.id;
+      const shoppingList = await lists.findById(idList);
+
+      if (shoppingList) {
+        const productsInShoppingList = shoppingList.products;
+
+        // Add function because code asynchrone
+        const checkProductInShoppingList = () => {
+          // Check if the product is  present in shoppingList
+          for (let i in productsInShoppingList) {
+            if (productsInShoppingList[i].id === idProduct) {
+              return i;
+            }
+          }
+        };
+
+        // Function Update Product
+        const updateProduct = async (positionProduct) => {
+          if (positionProduct) {
+            productsInShoppingList[positionProduct].quantity = quantity
+              ? quantity
+              : "";
+            productsInShoppingList[positionProduct].brand = brand ? brand : "";
+            productsInShoppingList[positionProduct].shop = shop ? shop : "";
+            productsInShoppingList[positionProduct].price = price ? price : "";
+            added
+              ? (productsInShoppingList[positionProduct].added = added)
+              : null;
+            await shoppingList.save();
+
+            // If picture is present, add to product in database and to Cloundinary
+            if (req.files.picture) {
+              const productToUpdate = await products.findById(
+                productsInShoppingList[positionProduct].reference
+              );
+              console.log(productsInShoppingList[positionProduct].reference);
+
+              productToUpdate.picture = await cloudinary.uploader.upload(
+                req.files.picture.path,
+                { folder: `vulpi/products/${productToUpdate.id}` }
+              );
+              await productToUpdate.save();
+            }
+
+            res.status(200).json({
+              message: "Product updated successfully",
+              list: shoppingList,
+            });
+          } else {
+            res.status(400).json({
+              message: `The product you want to add doesn't exist in the list ${shoppingList.title}, add it !`,
+            });
+          }
+        };
+
+        // Call function async with callback
+        funcAsync(checkProductInShoppingList, updateProduct);
       } else {
         res
           .status(400)
           .json({ message: "The list you want to modify doesn't exist" });
       }
-    };
-
-    // Call function async with callback
-    funcAsync(checkProductInDBUser, addProduct);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
   }
-});
+);
 
 /* =================================================== */
 
-// 5. Route PUT to update a product to a list
-router.put("/lists/update-product/:id", isAuthenticated, async (req, res) => {
-  try {
-    const { quantity, brand, shop, price, added } = req.fields;
-    const { idProduct } = req.query;
-    const idList = req.params.id;
-    const shoppingList = await lists.findById(idList);
+// 5. Route DELETE to delete a product to a list
+router.delete(
+  "/lists/delete-product/:id",
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      const idList = req.params.id;
+      const shoppingList = await lists.findById(idList);
+      const { idProduct } = req.query;
 
-    if (shoppingList) {
-      const productsInShoppingList = shoppingList.products;
+      if (shoppingList) {
+        const productsInShoppingList = shoppingList.products;
 
-      // Add function because code asynchrone
-      const checkProductInShoppingList = () => {
-        // Check if the product is already present in shoppingList
-        for (let i in productsInShoppingList) {
-          if (productsInShoppingList[i].id === idProduct) {
-            return i;
+        // Add function because code asynchrone
+        const checkProductInShoppingList = () => {
+          // Check if the product is  present in shoppingList
+          for (let i in productsInShoppingList) {
+            if (productsInShoppingList[i].id === idProduct) {
+              return i;
+            }
           }
-        }
-      };
+        };
 
-      // Function Update Product
-      const updateProduct = async (positionProduct) => {
-        if (positionProduct) {
-          productsInShoppingList[positionProduct].quantity = quantity
-            ? quantity
-            : "";
-          productsInShoppingList[positionProduct].brand = brand ? brand : "";
-          productsInShoppingList[positionProduct].shop = shop ? shop : "";
-          productsInShoppingList[positionProduct].price = price ? price : "";
-          added
-            ? (productsInShoppingList[positionProduct].added = added)
-            : null;
-          await shoppingList.save();
-
-          // If picture is present, add to product in database and to Cloundinary
-          if (req.files.picture) {
-            const productToUpdate = await products.findById(
-              productsInShoppingList[positionProduct].reference
-            );
-            console.log(productsInShoppingList[positionProduct].reference);
-
-            productToUpdate.picture = await cloudinary.uploader.upload(
-              req.files.picture.path,
-              { folder: `vulpi/products/${productToUpdate.id}` }
-            );
-            await productToUpdate.save();
+        // Function delete product
+        const deleteProduct = async (positionProduct) => {
+          if (positionProduct) {
+            productsInShoppingList.splice(positionProduct, 1);
+            await shoppingList.save();
+            res.status(200).json({
+              message: "Product delete successfully",
+              list: shoppingList,
+            });
+          } else {
+            res.status(400).json({
+              message: `The product you want to delete doesn't exist in the list ${shoppingList.title}`,
+            });
           }
+        };
 
-          res.status(200).json({
-            message: "Product updated successfully",
-            list: shoppingList,
-          });
-        } else {
-          res.status(400).json({
-            message: `The product you want to add doesn't exist in the list ${shoppingList.title}, add it !`,
-          });
-        }
-      };
-
-      // Call function async with callback
-      funcAsync(checkProductInShoppingList, updateProduct);
-    } else {
-      res
-        .status(400)
-        .json({ message: "The list you want to modify doesn't exist" });
+        // Call function async with callback
+        funcAsync(checkProductInShoppingList, deleteProduct);
+      } else {
+        res
+          .status(400)
+          .json({ message: "The list you want to modify doesn't exist" });
+      }
+    } catch (error) {
+      res.status(400).json({ error: error.message });
     }
-  } catch (error) {
-    res.status(400).json({ error: error.message });
   }
-});
+);
 
 module.exports = router;

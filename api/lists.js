@@ -25,7 +25,7 @@ cloudinary.config({
 
 /* =================================================== */
 /* =================================================== */
-/* ============     ROUTES MANON      ================ */
+/* ============     ROUTES MANON 🌺   ================ */
 /* =================================================== */
 /* =================================================== */
 
@@ -187,8 +187,37 @@ router.post(
       "💖",
       "💘",
       "💝",
+      "🌺",
+      "🌸",
+      "🌼",
+      "🌞",
+      "⭐️",
+      "☀️",
+      "🌈",
+      "🔥",
+      "💐",
+      "🦐",
+      "🦞",
+      "🦀",
+      "🐠",
+      "🐙",
+      "🦄",
+      "🤩",
+      "🥳",
+      "😎",
+      "😇",
+      "😍",
+      "🥰",
+      "😘",
+      "🤪",
+      "😋",
+      "😛",
+      "🙃",
+      "🎃",
     ];
-    console.log(emojisTab.length);
+    // console.log(emojisTab.length);
+    console.log(req.user);
+    console.log(req.user._id);
 
     try {
       const { title, emoji } = req.fields;
@@ -203,11 +232,16 @@ router.post(
               owner: req.user,
             });
 
-            // Save new list in BDD
+            // Link the new list created to the user who created it
+            const user = await users.findById(req.user._id);
+            user.lists.push(newList);
+
+            // Save new list in BDD & list to user
+            await user.save();
             await newList.save();
 
             // Send response to client
-            res.status(200).json({ message: "List created successfully" });
+            res.status(200).json({ message: "List created successfully 🦄" });
           } else {
             res.status(400).json({ message: "Emoji unauthorised 🤭" });
           }

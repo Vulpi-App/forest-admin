@@ -152,8 +152,15 @@ router.delete(
             // Delete folder from Cloudinary
             await cloudinary.api.delete_folder(`/vulpi/users/${req.params.id}`);
           }
+
+          // Delete lists the user is an owner of
+          for (let i = 0; i < userToDelete.lists.length; i++) {
+            const idListToDelete = userToDelete.lists[i];
+            await lists.findByIdAndDelete(idListToDelete);
+          }
+
           // Delete user from DB
-          await userToDelete.delete();
+          await users.findByIdAndDelete(req.params.id);
 
           // Respond to the client
           res.status(200).json({ message: "User successfully deleted" });
@@ -258,7 +265,13 @@ router.put(
             }
 
             if (password) {
-              userToUpdate.password = password;
+              // Create a new hash
+              const newHash = SHA256(userToUpdate.salt + password).toString(
+                encBase64
+              );
+
+              // Modify hash in DB
+              userToUpdate.hash = newHash;
             }
 
             if (req.files.avatar) {

@@ -187,6 +187,7 @@ router.put(
         newsletter,
         password,
       } = req.fields;
+
       if (
         email ||
         firstName ||
@@ -199,6 +200,7 @@ router.put(
       ) {
         // Check if ID in params corresponds to a user
         const userToUpdate = await users.findById(req.params.id);
+
         if (userToUpdate) {
           // Check if the token of userToUpdate is the same as the one sent in the headers
           const tokenInHeaders = req.headers.authorization.replace(
@@ -215,7 +217,7 @@ router.put(
                 if (!userWithEmail) {
                   userToUpdate.email = email;
                 } else {
-                  res.status(400).json({
+                  return res.status(400).json({
                     error: "An account already exists with this email",
                   });
                 }
@@ -239,7 +241,7 @@ router.put(
               ) {
                 userToUpdate.account.gender = gender;
               } else {
-                res
+                return res
                   .status(400)
                   .json({ error: "Wrong value for this parameter" });
               }
@@ -273,7 +275,7 @@ router.put(
                 req.files.avatar.path,
                 { folder: `/vulpi/users/${req.params.id}` }
               );
-
+              console.log(result);
               // Modify info about the avatar of user
               userToUpdate.account.avatar = result;
             }
@@ -391,6 +393,45 @@ router.post("/user/appleauth", formidable(), async (req, res) => {
       // Respond to the client
     } else {
       res.status(400).json({ error: "Missing Apple Id" });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/* =================================================== */
+// Route to get info about a user
+/* =================================================== */
+router.get("/user/:userId", isAuthenticated, async (req, res) => {
+  try {
+    if (req.params.userId) {
+      // Check if the user exists in DB
+      const userWithId = await users.findById(req.params.userId);
+
+      if (userWithId) {
+        // Check if the token sent is the same as the one of userWithId
+        const token = req.headers.authorization.replace("Bearer ", "");
+        if (token === userWithId.token) {
+          res.status(200).json({
+            _id: userWithId._id,
+            email: userWithId.email,
+            lists: userWithId.lists,
+            account: {
+              firstName: userWithId.account.firstName,
+              lastName: userWithId.account.lastName,
+              gender: userWithId.account.gender,
+              birthDate: userWithId.account.birthDate,
+              avatar: userWithId.account.avatar,
+            },
+          });
+        } else {
+          res.status(401).json({ error: "Unauthorized" });
+        }
+      } else {
+        res.status(400).json({ error: "This user doesn't exist" });
+      }
+    } else {
+      res.status(400).json({ error: "Missing user ID" });
     }
   } catch (error) {
     res.status(400).json({ error: error.message });

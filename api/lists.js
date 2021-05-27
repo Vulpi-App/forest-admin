@@ -540,7 +540,7 @@ router.delete(
 /* =================================================== */
 // Route to get All lists of a user
 /* =================================================== */
-router.get("/api/lists/:userId", isAuthenticated, async (req, res) => {
+router.get("/lists/:userId", isAuthenticated, async (req, res) => {
   try {
     if (req.params.userId) {
       // Check if ID in params corresponds to a user
@@ -570,7 +570,7 @@ router.get("/api/lists/:userId", isAuthenticated, async (req, res) => {
 /* =================================================== */
 // Route to get products in a given list
 /* =================================================== */
-router.get("/api/listcontent/:listId", isAuthenticated, async (req, res) => {
+router.get("/listcontent/:listId", isAuthenticated, async (req, res) => {
   try {
     if (req.params.listId) {
       const token = req.headers.authorization.replace("Bearer ", "");
@@ -604,7 +604,7 @@ router.get("/api/listcontent/:listId", isAuthenticated, async (req, res) => {
 /* =================================================== */
 // Route to get All lists in DB
 /* =================================================== */
-router.get("/api/lists", async (req, res) => {
+router.get("/lists", async (req, res) => {
   try {
     const shoppingLists = await lists.find();
 

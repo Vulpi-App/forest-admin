@@ -332,7 +332,7 @@ router.post(
       const { nameProduct, quantity, brand, shop, price } = req.fields;
 
       const idList = req.params.id;
-      const shoppingList = await lists.findById(idList);
+      const shoppingList = await lists.findById(idList).populate("products");
       const user = req.user;
 
       // Add function because code asynchrone

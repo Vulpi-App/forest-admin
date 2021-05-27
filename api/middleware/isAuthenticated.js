@@ -8,7 +8,8 @@ const isAuthenticated = async (req, res, next) => {
       const token = req.headers.authorization.replace("Bearer ", "");
       const userWithToken = await users
         .findOne({ token: token })
-        .select("_id email account lists friends");
+        .select("_id email account lists friends")
+        .populate("products");
 
       if (userWithToken) {
         // Create a new key in req with the infos of the user

@@ -20,7 +20,7 @@ const isAuthenticated = require("./middleware/isAuthenticated");
 /* =================================================== */
 // Route Sign Up with email
 /* =================================================== */
-router.post("/api/user/signup", formidable(), async (req, res) => {
+router.post("/user/signup", formidable(), async (req, res) => {
   try {
     // Destructuring of req.fields
     const { email, firstName, password } = req.fields;
@@ -90,7 +90,7 @@ router.post("/api/user/signup", formidable(), async (req, res) => {
 /* =================================================== */
 // Route Log In with email
 /* =================================================== */
-router.post("/api/user/login", formidable(), async (req, res) => {
+router.post("/user/login", formidable(), async (req, res) => {
   try {
     //  Destructuring of req.fields
     const { email, password } = req.fields;
@@ -130,7 +130,7 @@ router.post("/api/user/login", formidable(), async (req, res) => {
 // Route to delete a user
 /* =================================================== */
 router.delete(
-  "/api/user/delete/:id",
+  "/user/delete/:id",
   formidable(),
   isAuthenticated,
   async (req, res) => {
@@ -173,7 +173,7 @@ router.delete(
 // Route to modify a user
 /* =================================================== */
 router.put(
-  "/api/user/update/:id",
+  "/user/update/:id",
   formidable(),
   isAuthenticated,
   async (req, res) => {
@@ -302,7 +302,7 @@ router.put(
 /* =================================================== */
 // Route to Authenticate with Apple
 /* =================================================== */
-router.post("/api/user/appleauth", formidable(), async (req, res) => {
+router.post("/user/appleauth", formidable(), async (req, res) => {
   try {
     const { appleId, firstName, lastName, email } = req.fields;
     if (appleId) {
@@ -401,7 +401,7 @@ router.post("/api/user/appleauth", formidable(), async (req, res) => {
 // Route to get all users
 /* =================================================== */
 
-router.get("/api/users", formidable(), async (req, res) => {
+router.get("/users", formidable(), async (req, res) => {
   try {
     const usersList = await users.find();
     res.status(200).json(usersList);

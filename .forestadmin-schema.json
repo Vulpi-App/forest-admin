@@ -367,6 +367,21 @@
       "inverseOf": null,
       "validations": []
     }, {
+      "field": "idThirdPartyAuth",
+      "type": "String",
+      "defaultValue": "",
+      "enums": null,
+      "integration": null,
+      "isFilterable": true,
+      "isPrimaryKey": false,
+      "isReadOnly": false,
+      "isRequired": false,
+      "isSortable": true,
+      "isVirtual": false,
+      "reference": null,
+      "inverseOf": null,
+      "validations": []
+    }, {
       "field": "lists",
       "type": ["String"],
       "defaultValue": null,

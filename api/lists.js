@@ -3,8 +3,7 @@ const express = require("express");
 const router = express.Router();
 const formidable = require("express-formidable");
 
-// Use Express-Formidable
-router.use(formidable());
+const isAuthenticated = require("./middleware/isAuthenticated");
 const { users, lists, products } = require("../models");
 
 // Import Middleware
@@ -17,21 +16,10 @@ const funcAsync = (func1, cb) => {
 
 /* =================================================== */
 
-// All lists
-router.get("/lists", async (req, res) => {
-  try {
-    const shoppingLists = await lists.find();
-
-    res.status(200).json(shoppingLists);
-  } catch (error) {
-    console.log(error);
-  }
-});
-
 // Route POST to add a product to a list
 // AJOUTER isAuthenticated
 // AJOUTER les photos avec cloudinary
-router.post("/lists/add-product/:id", async (req, res) => {
+router.post("/lists/add-product/:id", formidable(), async (req, res) => {
   try {
     const { nameProduct, quantity, brand, shop, price } = req.fields;
 
@@ -133,7 +121,7 @@ router.post("/lists/add-product/:id", async (req, res) => {
 // AJOUTER isAuthenticated
 // AJOUTER les photos avec cloudinary
 // VOIR si nécessaire d'ajouter un nombre de characters max
-router.put("/lists/update-product/:id", async (req, res) => {
+router.put("/lists/update-product/:id", formidable(), async (req, res) => {
   try {
     const { quantity, brand, shop, price, added } = req.fields;
     const { idProduct } = req.query;
@@ -159,6 +147,7 @@ router.put("/lists/update-product/:id", async (req, res) => {
 });
 
 /* =================================================== */
+
 
 // 1. CREATE a shopping list ✅
 // EmojisTab to be complete (animals, nature...) ⛔️
@@ -315,6 +304,7 @@ router.post("/lists/create", isAuthenticated, async (req, res) => {
   ];
   console.log(emojisTab.length);
 
+
   try {
     const { title, emoji } = req.fields;
 
@@ -349,8 +339,10 @@ router.post("/lists/create", isAuthenticated, async (req, res) => {
 
 /* =================================================== */
 
+
 // 2. UPDATE shopping list: title & emoji ✅
 router.put("/lists/update/:id", isAuthenticated, async (req, res) => {
+
   try {
     const { title, emoji } = req.fields;
 
@@ -381,8 +373,10 @@ router.put("/lists/update/:id", isAuthenticated, async (req, res) => {
 
 /* =================================================== */
 
+
 // 3. DELETE a shopping list ✅
 router.delete("/lists/delete/:id", isAuthenticated, async (req, res) => {
+
   try {
     // Looking for a list with corresponding ID in BDD
     const listToDelete = await lists.findById(req.params.id);
@@ -398,3 +392,80 @@ router.delete("/lists/delete/:id", isAuthenticated, async (req, res) => {
 });
 
 module.exports = router;
+
+/* =================================================== */
+// Route to get All lists of a user
+/* =================================================== */
+router.get("/api/lists/:userId", isAuthenticated, async (req, res) => {
+  try {
+    if (req.params.userId) {
+      // Check if ID in params corresponds to a user
+      const user = await users.findById(req.params.userId).populate("lists");
+
+      if (user) {
+        // Check if the token of userToUpdate is the same as the one sent in the headers
+        const tokenInHeaders = req.headers.authorization.replace("Bearer ", "");
+
+        if (user.token === tokenInHeaders) {
+          // Respond to client with the lists of the user
+          res.status(200).json({ lists: user.lists });
+        } else {
+          res.status(401).json({ error: "Unauthorized" });
+        }
+      } else {
+        res.status(400).json({ error: "This user doesn't exist" });
+      }
+    } else {
+      res.status(400).json({ error: "Missing user Id" });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/* =================================================== */
+// Route to get products in a given list
+/* =================================================== */
+router.get("/api/listcontent/:listId", isAuthenticated, async (req, res) => {
+  try {
+    if (req.params.listId) {
+      const token = req.headers.authorization.replace("Bearer ", "");
+
+      // Check if the token sent in headers corresponds to a user owner of the list
+      const userWithToken = await users.findOne({ token: token });
+
+      const listWithId = await lists.findById(req.params.listId);
+
+      if (listWithId) {
+        if (userWithToken._id === listWithId.owner) {
+          res.status(200).json({
+            title: listWithId.title,
+            emoji: listWithId.emoji,
+            products: listWithId.products,
+          });
+        } else {
+          res.status(401).json({ error: "Unauthorized" });
+        }
+      } else {
+        res.status(400).json({ error: "This list doesn't exist" });
+      }
+    } else {
+      res.status(400).json({ error: "Missing list Id" });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/* =================================================== */
+// Route to get All lists in DB
+/* =================================================== */
+router.get("/api/lists", async (req, res) => {
+  try {
+    const shoppingLists = await lists.find();
+
+    res.status(200).json(shoppingLists);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});

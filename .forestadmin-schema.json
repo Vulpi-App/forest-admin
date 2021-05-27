@@ -268,7 +268,7 @@
           "field": "lastName",
           "type": "String"
         }, {
-          "field": "sex",
+          "field": "gender",
           "type": "String"
         }, {
           "field": "birthDate",

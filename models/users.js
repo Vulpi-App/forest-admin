@@ -10,7 +10,7 @@ module.exports = (mongoose, Mongoose) => {
       account: {
         firstName: { required: true, type: String },
         lastName: { type: String, default: "" },
-        sex: { type: String, default: "" },
+        gender: { type: String, default: "" },
         birthDate: { type: String, default: "" },
         avatar: { type: Mongoose.Schema.Types.Mixed, default: {} },
       },

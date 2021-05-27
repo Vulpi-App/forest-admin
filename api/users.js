@@ -182,7 +182,7 @@ router.put(
         email,
         firstName,
         lastName,
-        sex,
+        gender,
         birthDate,
         newsletter,
         password,
@@ -191,7 +191,7 @@ router.put(
         email ||
         firstName ||
         lastName ||
-        sex ||
+        gender ||
         birthDate ||
         req.files.avatar ||
         newsletter ||
@@ -230,14 +230,14 @@ router.put(
               userToUpdate.account.lastName = lastName;
             }
 
-            if (sex) {
+            if (gender) {
               if (
-                sex === "female" ||
-                sex === "male" ||
-                sex === "other" ||
-                sex === "not answered"
+                gender === "female" ||
+                gender === "male" ||
+                gender === "other" ||
+                gender === "not answered"
               ) {
-                userToUpdate.account.sex = sex;
+                userToUpdate.account.gender = gender;
               } else {
                 res
                   .status(400)

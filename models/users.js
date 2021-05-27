@@ -6,7 +6,7 @@ module.exports = (mongoose, Mongoose) => {
   // Learn more here: https://docs.forestadmin.com/documentation/v/v6/reference-guide/models/enrich-your-models#declaring-a-new-field-in-a-model
   const schema = Mongoose.Schema(
     {
-      email: { unique: true, type: String, required: true },
+      email: { type: String, required: true },
       account: {
         firstName: { required: true, type: String },
         lastName: { type: String, default: "" },
@@ -20,6 +20,7 @@ module.exports = (mongoose, Mongoose) => {
       token: String,
       hash: String,
       salt: String,
+      idThirdPartyAuth: { type: String, default: "" },
       lists: [{ type: Mongoose.Schema.Types.ObjectId, ref: "lists" }],
       friends: [{ type: Mongoose.Schema.Types.ObjectId, ref: "users" }],
       products: [{ type: Mongoose.Schema.Types.ObjectId, ref: "products" }],

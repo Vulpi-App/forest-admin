@@ -193,6 +193,7 @@ router.put(
         birthDate,
         newsletter,
         password,
+        firstConnection,
       } = req.fields;
 
       if (
@@ -203,7 +204,8 @@ router.put(
         birthDate ||
         req.files.avatar ||
         newsletter ||
-        password
+        password ||
+        firstConnection
       ) {
         // Check if ID in params corresponds to a user
         const userToUpdate = await users.findById(req.params.id);
@@ -272,6 +274,12 @@ router.put(
 
               // Modify hash in DB
               userToUpdate.hash = newHash;
+            }
+
+            if (firstConnection === "true") {
+              userToUpdate.firstConnection = true;
+            } else if (firstConnection === "false") {
+              userToUpdate.firstConnection = false;
             }
 
             if (req.files.avatar) {

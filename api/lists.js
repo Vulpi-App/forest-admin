@@ -611,23 +611,14 @@ router.get("/lists/:userId", isAuthenticated, async (req, res) => {
 router.get("/listcontent/:listId", isAuthenticated, async (req, res) => {
   try {
     if (req.params.listId) {
-      const token = req.headers.authorization.replace("Bearer ", "");
-
-      // Check if the token sent in headers corresponds to a user owner of the list
-      const userWithToken = await users.findOne({ token: token });
-
       const listWithId = await lists.findById(req.params.listId);
 
       if (listWithId) {
-        if (userWithToken._id === listWithId.owner) {
-          res.status(200).json({
-            title: listWithId.title,
-            emoji: listWithId.emoji,
-            products: listWithId.products,
-          });
-        } else {
-          res.status(401).json({ error: "Unauthorized" });
-        }
+        res.status(200).json({
+          title: listWithId.title,
+          emoji: listWithId.emoji,
+          products: listWithId.products,
+        });
       } else {
         res.status(400).json({ error: "This list doesn't exist" });
       }

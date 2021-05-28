@@ -224,7 +224,7 @@ router.post(
 
       // title & emoji already filled in create list step (so mandatory)
       if (title && emoji) {
-        if (title.length < 20) {
+        if (title.length < 30) {
           if (emojisTab.indexOf(emoji) !== -1) {
             const newList = new lists({
               title: title,
@@ -273,14 +273,14 @@ router.put(
 
       // If there is a corresponding list
       if (listToUpdate) {
-        if (title) {
+        if (title && title.length < 30) {
           listToUpdate.title = title;
         }
         if (emoji) {
           listToUpdate.emoji = emoji;
         }
       } else {
-        res.status(200).json({ message: "No changes made 🙃" });
+        res.status(400).json({ message: "This list does not exist 🥴" });
       }
 
       // Save update list in BDD
@@ -302,11 +302,15 @@ router.delete("/lists/delete/:id", isAuthenticated, async (req, res) => {
     // Looking for a list with corresponding ID in BDD
     const listToDelete = await lists.findById(req.params.id);
 
-    // Delete list
-    await listToDelete.delete();
+    if (listToDelete) {
+      // Delete list
+      await listToDelete.delete();
 
-    // Send response to client
-    res.status(200).json({ message: "List deleted successfully 👌🏻" });
+      // Send response to client
+      res.status(200).json({ message: "List deleted successfully 👌🏻" });
+    } else {
+      res.status(400).json({ message: "This list does not exist 🥴" });
+    }
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -328,7 +332,7 @@ router.post(
       const { nameProduct, quantity, brand, shop, price } = req.fields;
 
       const idList = req.params.id;
-      const shoppingList = await lists.findById(idList);
+      const shoppingList = await lists.findById(idList).populate("products");
       const user = req.user;
 
       // Add function because code asynchrone

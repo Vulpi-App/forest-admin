@@ -224,7 +224,7 @@ router.post(
 
       // title & emoji already filled in create list step (so mandatory)
       if (title && emoji) {
-        if (title.length < 30) {
+        if (title.length <= 30) {
           if (emojisTab.indexOf(emoji) !== -1) {
             const newList = new lists({
               title: title,
@@ -273,7 +273,7 @@ router.put(
 
       // If there is a corresponding list
       if (listToUpdate) {
-        if (title && title.length < 30) {
+        if (title && title.length <= 30) {
           listToUpdate.title = title;
         }
         if (emoji) {
@@ -610,6 +610,7 @@ router.get("/lists/:userId", isAuthenticated, async (req, res) => {
 /* =================================================== */
 router.get("/listcontent/:listId", isAuthenticated, async (req, res) => {
   try {
+    console.log(req.params.listId);
     if (req.params.listId) {
       const token = req.headers.authorization.replace("Bearer ", "");
 

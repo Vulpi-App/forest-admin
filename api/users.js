@@ -53,7 +53,7 @@ router.post("/user/signup", formidable(), async (req, res) => {
 
         // Create a new default list "Ma liste de courses"
         const newList = new lists({
-          title: "Ma liste de courses",
+          title: "Courses maison",
           emoji: "🥑",
           owner: newUser,
         });

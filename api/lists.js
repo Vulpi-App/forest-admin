@@ -611,7 +611,9 @@ router.get("/lists/:userId", isAuthenticated, async (req, res) => {
 router.get("/listcontent/:listId", isAuthenticated, async (req, res) => {
   try {
     if (req.params.listId) {
-      const listWithId = await lists.findById(req.params.listId);
+      const listWithId = await lists
+        .findById(req.params.listId)
+        .populate("products.reference");
 
       if (listWithId) {
         res.status(200).json({

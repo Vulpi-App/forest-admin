@@ -329,7 +329,8 @@ router.post(
   isAuthenticated,
   async (req, res) => {
     try {
-      const { nameProduct, quantity, brand, shop, price } = req.fields;
+      const { quantity, brand, shop, price } = req.fields;
+      const nameProduct = req.fields.nameProduct.toLowerCase();
 
       const idList = req.params.id;
       const shoppingList = await lists.findById(idList).populate("products");
@@ -582,7 +583,10 @@ router.get("/lists/:userId", isAuthenticated, async (req, res) => {
   try {
     if (req.params.userId) {
       // Check if ID in params corresponds to a user
-      const user = await users.findById(req.params.userId).populate("lists");
+      const user = await users
+        .findById(req.params.userId)
+        .populate("lists")
+        .populate("products");
 
       if (user) {
         // Check if the token of userToUpdate is the same as the one sent in the headers
@@ -590,7 +594,7 @@ router.get("/lists/:userId", isAuthenticated, async (req, res) => {
 
         if (user.token === tokenInHeaders) {
           // Respond to client with the lists of the user
-          res.status(200).json({ lists: user.lists });
+          res.status(200).json({ lists: user.lists, user: user });
         } else {
           res.status(401).json({ error: "Unauthorized" });
         }

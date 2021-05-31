@@ -329,7 +329,8 @@ router.post(
   isAuthenticated,
   async (req, res) => {
     try {
-      const { nameProduct, quantity, brand, shop, price } = req.fields;
+      const { quantity, brand, shop, price } = req.fields;
+      const nameProduct = req.fields.nameProduct.toLowerCase();
 
       const idList = req.params.id;
       const shoppingList = await lists.findById(idList).populate("products");

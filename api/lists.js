@@ -446,7 +446,7 @@ router.put(
   isAuthenticated,
   async (req, res) => {
     try {
-      const { quantity, brand, shop, price, added } = req.fields;
+      const { nameProduct, quantity, brand, shop, price, added } = req.fields;
       const { idProduct } = req.query;
       const idList = req.params.id;
       const shoppingList = await lists.findById(idList);
@@ -467,29 +467,47 @@ router.put(
         // Function Update Product
         const updateProduct = async (positionProduct) => {
           if (positionProduct) {
-            productsInShoppingList[positionProduct].quantity = quantity
-              ? quantity
-              : "";
-            productsInShoppingList[positionProduct].brand = brand ? brand : "";
-            productsInShoppingList[positionProduct].shop = shop ? shop : "";
-            productsInShoppingList[positionProduct].price = price ? price : "";
-            added
-              ? (productsInShoppingList[positionProduct].added = added)
-              : null;
-            await shoppingList.save();
+            // Check if it's just the added modification
+            if (added && !quantity && !brand && !shop && !price) {
+              productsInShoppingList[positionProduct].added = added;
 
-            // If picture is present, add to product in database and to Cloundinary
-            if (req.files.picture) {
-              const productToUpdate = await products.findById(
+              await shoppingList.save();
+            } else {
+              productsInShoppingList[positionProduct].quantity = quantity
+                ? quantity
+                : "";
+              productsInShoppingList[positionProduct].brand = brand
+                ? brand
+                : "";
+              productsInShoppingList[positionProduct].shop = shop ? shop : "";
+              productsInShoppingList[positionProduct].price = price
+                ? price
+                : "";
+
+              await shoppingList.save();
+
+              // If picture is present, add to product in database and to Cloundinary
+              if (req.files.picture) {
+                const productToUpdate = await products.findById(
+                  productsInShoppingList[positionProduct].reference
+                );
+                // console.log(productsInShoppingList[positionProduct].reference);
+
+                productToUpdate.picture = await cloudinary.uploader.upload(
+                  req.files.picture.path,
+                  { folder: `vulpi/products/${productToUpdate.id}` }
+                );
+                await productToUpdate.save();
+              }
+            }
+
+            // Update name to product
+            if (nameProduct) {
+              const productToUpdateName = await products.findById(
                 productsInShoppingList[positionProduct].reference
               );
-              console.log(productsInShoppingList[positionProduct].reference);
-
-              productToUpdate.picture = await cloudinary.uploader.upload(
-                req.files.picture.path,
-                { folder: `vulpi/products/${productToUpdate.id}` }
-              );
-              await productToUpdate.save();
+              productToUpdateName.name = nameProduct.toLowerCase();
+              await productToUpdateName.save();
             }
 
             res.status(200).json({
@@ -498,7 +516,7 @@ router.put(
             });
           } else {
             res.status(400).json({
-              message: `The product you want to add doesn't exist in the list ${shoppingList.title}, add it !`,
+              message: `The product you want to modify doesn't exist in the list`,
             });
           }
         };
@@ -552,7 +570,7 @@ router.delete(
             });
           } else {
             res.status(400).json({
-              message: `The product you want to delete doesn't exist in the list ${shoppingList.title}`,
+              message: `The product you want to delete doesn't exist in the list`,
             });
           }
         };
@@ -585,8 +603,12 @@ router.get("/lists/:userId", isAuthenticated, async (req, res) => {
       // Check if ID in params corresponds to a user
       const user = await users
         .findById(req.params.userId)
-        .populate("lists")
+        .populate({ path: "lists", populate: { path: "products.reference" } })
+        // .populate("lists")
         .populate("products");
+
+      // console.log(user);
+      // console.log(user.lists);
 
       if (user) {
         // Check if the token of userToUpdate is the same as the one sent in the headers

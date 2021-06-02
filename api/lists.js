@@ -47,7 +47,6 @@ router.post(
       // 🚨 TO FIX - Find a way to limit to only 1 emoji!
       if (title && emoji) {
         if (title.length <= 30) {
-
           const newList = new lists({
             title: title,
             emoji: emoji,
@@ -64,7 +63,6 @@ router.post(
 
           // Send response to client
           res.status(200).json({ message: "List created successfully 🦄" });
-
         } else {
           res.status(400).json({ message: "Title is too long 😬" });
         }
@@ -447,7 +445,6 @@ router.get("/lists/:userId", isAuthenticated, async (req, res) => {
         // .populate("lists")
         .populate("products");
 
-
       // console.log(user);
       // console.log(user.lists);
 
@@ -494,6 +491,27 @@ router.get("/listcontent/:listId", isAuthenticated, async (req, res) => {
       }
     } else {
       res.status(400).json({ error: "Missing list Id" });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/* =================================================== */
+// Route to get info about a list
+/* =================================================== */
+router.get("/list/:id", isAuthenticated, async (req, res) => {
+  try {
+    if (req.params.id) {
+      const shoppingList = await lists.findById(req.params.id);
+
+      if (shoppingList) {
+        res.status(200).json(shoppingList);
+      } else {
+        res.status(400).json({ message: "This List doesn't exist." });
+      }
+    } else {
+      res.status(400).json({ message: "Please send a list ID." });
     }
   } catch (error) {
     res.status(400).json({ error: error.message });

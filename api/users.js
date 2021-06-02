@@ -296,7 +296,7 @@ router.put(
                 req.files.avatar.path,
                 { folder: `/vulpi/users/${req.params.id}` }
               );
-              console.log(result);
+
               // Modify info about the avatar of user
               userToUpdate.account.avatar = result;
             }

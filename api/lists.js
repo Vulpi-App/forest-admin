@@ -234,7 +234,7 @@ router.post(
 
             // Link the new list created to the user who created it
             const user = await users.findById(req.user._id);
-            user.lists.push(newList);
+            user.lists.unshift(newList);
 
             // Save new list in BDD & list to user
             await user.save();

@@ -32,219 +32,39 @@ cloudinary.config({
 /* =================================================== */
 
 // 1. CREATE a shopping list ✅
-// EmojisTab to be complete (animals, nature...) ⛔️
 router.post(
   "/lists/create",
   formidable(),
   isAuthenticated,
   async (req, res) => {
-    const emojisTab = [
-      "🍏",
-      "🍎",
-      "🍐",
-      "🍊",
-      "🍋",
-      "🍌",
-      "🍉",
-      "🍇",
-      "🍓",
-      "🫐",
-      "🍈",
-      "🍒",
-      "🍑",
-      "🥭",
-      "🍍",
-      "🥥",
-      "🥝",
-      "🍅",
-      "🍆",
-      "🥑",
-      "🥦",
-      "🥬",
-      "🥒",
-      "🌶",
-      "🫑",
-      "🌽",
-      "🥕",
-      "🫒",
-      "🧄",
-      "🧅",
-      "🥔",
-      "🍠",
-      "🥐",
-      "🥯",
-      "🍞",
-      "🥖",
-      "🥨",
-      "🧀",
-      "🥚",
-      "🍳",
-      "🧈",
-      "🥞",
-      "🧇",
-      "🥓",
-      "🥩",
-      "🍗",
-      "🍖",
-      "🦴",
-      "🌭",
-      "🍔",
-      "🍟",
-      "🍕",
-      "🫓",
-      "🥪",
-      "🥙",
-      "🧆",
-      "🌮",
-      "🌯",
-      "🫔",
-      "🥗",
-      "🥘",
-      "🥘",
-      "🫕",
-      "🥫",
-      "🍝",
-      "🍜",
-      "🍲",
-      "🍛",
-      "🍣",
-      "🍱",
-      "🥟",
-      "🦪",
-      "🍤",
-      "🍙",
-      "🍚",
-      "🍘",
-      "🍥",
-      "🥠",
-      "🥮",
-      "🍢",
-      "🍡",
-      "🍧",
-      "🍨",
-      "🍦",
-      "🥧",
-      "🧁",
-      "🍰",
-      "🎂",
-      "🍮",
-      "🍭",
-      "🍬",
-      "🍫",
-      "🍿",
-      "🍩",
-      "🍪",
-      "🌰",
-      "🥜",
-      "🍯",
-      "🥛",
-      "🍼",
-      "🫖",
-      "☕️",
-      "🍵",
-      "🧃",
-      "🥤",
-      "🧋",
-      "🍶",
-      "🍺",
-      "🍻",
-      "🥂",
-      "🍷",
-      "🥃",
-      "🍸",
-      "🍹",
-      "🧉",
-      "🍾",
-      "🧊",
-      "🥄",
-      "🍴",
-      "🍽",
-      "🥣",
-      "🥡",
-      "🥢",
-      "🧂",
-      "🧸",
-      "🎁",
-      "🎈",
-      "🎀",
-      "🎉",
-      "🛍",
-      "🛒",
-      "🎊",
-      "♥️",
-      "🧡",
-      "💛",
-      "💚",
-      "💙",
-      "💜",
-      "🖤",
-      "🤍",
-      "🤎",
-      "💕",
-      "💞",
-      "💓",
-      "💗",
-      "💖",
-      "💘",
-      "💝",
-      "🌺",
-      "🌸",
-      "🌼",
-      "🌞",
-      "⭐️",
-      "☀️",
-      "🌈",
-      "🔥",
-      "💐",
-      "🦐",
-      "🦞",
-      "🦀",
-      "🐠",
-      "🐙",
-      "🦄",
-      "🤩",
-      "🥳",
-      "😎",
-      "😇",
-      "😍",
-      "🥰",
-      "😘",
-      "🤪",
-      "😋",
-      "😛",
-      "🙃",
-      "🎃",
-    ];
-    // console.log(emojisTab.length);
-    console.log(req.user);
-    console.log(req.user._id);
+    // console.log(req.user);
+    // console.log(req.user._id);
 
     try {
       const { title, emoji } = req.fields;
 
       // title & emoji already filled in create list step (so mandatory)
+      // 🚨 TO FIX - Find a way to limit to only 1 emoji!
       if (title && emoji) {
         if (title.length <= 30) {
-          if (emojisTab.indexOf(emoji) !== -1) {
-            const newList = new lists({
-              title: title,
-              emoji: emoji,
-              owner: req.user,
-            });
 
-            // Link the new list created to the user who created it
-            const user = await users.findById(req.user._id);
-            user.lists.unshift(newList);
+          const newList = new lists({
+            title: title,
+            emoji: emoji,
+            owner: req.user,
+          });
 
-            // Save new list in BDD & list to user
-            await user.save();
-            await newList.save();
+          // Link the new list created to the user who created it
+          const user = await users.findById(req.user._id);
+          user.lists.unshift(newList);
 
-            // Send response to client
-            res.status(200).json({ message: "List created successfully 🦄" });
-          } else {
-            res.status(400).json({ message: "Emoji unauthorised 🤭" });
-          }
+          // Save new list in BDD & list to user
+          await user.save();
+          await newList.save();
+
+          // Send response to client
+          res.status(200).json({ message: "List created successfully 🦄" });
+
         } else {
           res.status(400).json({ message: "Title is too long 😬" });
         }
@@ -297,24 +117,43 @@ router.put(
 /* =================================================== */
 
 // 3. DELETE a shopping list ✅
-router.delete("/lists/delete/:id", isAuthenticated, async (req, res) => {
-  try {
-    // Looking for a list with corresponding ID in BDD
-    const listToDelete = await lists.findById(req.params.id);
+router.delete(
+  "/lists/delete/:id/:userId",
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      if (req.params.userId && req.params.id) {
+        // Looking for user who want to delete the list & populate all his lists
+        const user = await users.findById(req.params.userId).populate("lists");
+        // console.log(user);
 
-    if (listToDelete) {
-      // Delete list
-      await listToDelete.delete();
+        // Looking for a list with corresponding ID in BDD
+        const listToDelete = await lists.findById(req.params.id);
 
-      // Send response to client
-      res.status(200).json({ message: "List deleted successfully 👌🏻" });
-    } else {
-      res.status(400).json({ message: "This list does not exist 🥴" });
+        if (listToDelete && user) {
+          // Check how many lists has the user - if user has only 1 list, delete it is not authorized
+          if (user.lists.length > 1) {
+            // Delete list
+            await listToDelete.delete();
+
+            // Send response to client
+            res.status(200).json({ message: "List deleted successfully 👌🏻" });
+          } else {
+            res.status(400).json({
+              message: "Impossible to delete the user's last list 😳",
+            });
+          }
+        } else {
+          res.status(400).json({ message: "List or user does not exist 🥴" });
+        }
+      } else {
+        res.status(400).json({ message: "Parameters are missing 😬" });
+      }
+    } catch (error) {
+      res.status(400).json({ error: error.message });
     }
-  } catch (error) {
-    res.status(400).json({ error: error.message });
   }
-});
+);
 
 /* =================================================== */
 /* =================================================== */
@@ -586,7 +425,8 @@ router.get("/lists/:userId", isAuthenticated, async (req, res) => {
       const user = await users
         .findById(req.params.userId)
         .populate("lists")
-        .populate("products");
+        .populate("products")
+        .populate("products.reference");
 
       if (user) {
         // Check if the token of userToUpdate is the same as the one sent in the headers

@@ -47,24 +47,26 @@ router.post(
       // 🚨 TO FIX - Find a way to limit to only 1 emoji!
       if (title && emoji) {
         if (title.length <= 30) {
+          if (emoji.length <= 2) {
+            const newList = new lists({
+              title: title,
+              emoji: emoji,
+              owner: req.user,
+            });
 
-          const newList = new lists({
-            title: title,
-            emoji: emoji,
-            owner: req.user,
-          });
+            // Link the new list created to the user who created it
+            const user = await users.findById(req.user._id);
+            user.lists.unshift(newList);
 
-          // Link the new list created to the user who created it
-          const user = await users.findById(req.user._id);
-          user.lists.unshift(newList);
+            // Save new list in BDD & list to user
+            await user.save();
+            await newList.save();
 
-          // Save new list in BDD & list to user
-          await user.save();
-          await newList.save();
-
-          // Send response to client
-          res.status(200).json({ message: "List created successfully 🦄" });
-
+            // Send response to client
+            res.status(200).json({ message: "List created successfully 🦄" });
+          } else {
+            res.status(400).json({ message: "Only 1 emoji is authorized 🙊" });
+          }
         } else {
           res.status(400).json({ message: "Title is too long 😬" });
         }
@@ -97,7 +99,11 @@ router.put(
           listToUpdate.title = title;
         }
         if (emoji) {
-          listToUpdate.emoji = emoji;
+          if (emoji.length <= 2) {
+            listToUpdate.emoji = emoji;
+          } else {
+            res.status(400).json({ message: "Only 1 emoji is authorized 🙊" });
+          }
         }
       } else {
         res.status(400).json({ message: "This list does not exist 🥴" });
@@ -446,7 +452,6 @@ router.get("/lists/:userId", isAuthenticated, async (req, res) => {
         .populate({ path: "lists", populate: { path: "products.reference" } })
         // .populate("lists")
         .populate("products");
-
 
       // console.log(user);
       // console.log(user.lists);

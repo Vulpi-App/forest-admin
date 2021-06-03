@@ -13,6 +13,7 @@ module.exports = (mongoose, Mongoose) => {
         {
           reference: { type: Mongoose.Schema.Types.ObjectId, ref: "products" },
           quantity: String,
+          measure: String,
           brand: String,
           shop: String,
           price: String,

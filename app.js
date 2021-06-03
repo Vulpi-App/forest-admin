@@ -18,6 +18,7 @@ const app = express();
 const usersRoute = require("./api/users");
 const listsRoute = require("./api/lists");
 const productsRoute = require("./api/products");
+const feedbackRoute = require("./api/feedback");
 
 let allowedOrigins = [/\.forestadmin\.com$/, /localhost:\d{4}$/];
 
@@ -52,6 +53,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(usersRoute);
 app.use(listsRoute);
 app.use(productsRoute);
+app.use(feedbackRoute);
 
 app.use(
   jwt({

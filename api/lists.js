@@ -14,6 +14,11 @@ const funcAsync = (func1, cb) => {
   cb(func1());
 };
 
+// Function async with two parameters
+const funcAsyncWithTwoParams = (func1, func2, cb) => {
+  cb(func1(), func2());
+};
+
 // Cloundinary keys
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -47,6 +52,7 @@ router.post(
       // 🚨 TO FIX - Find a way to limit to only 1 emoji!
       if (title && emoji) {
         if (title.length <= 30) {
+
           if (emoji.length <= 2) {
             const newList = new lists({
               title: title,
@@ -67,6 +73,7 @@ router.post(
           } else {
             res.status(400).json({ message: "Only 1 emoji is authorized 🙊" });
           }
+
         } else {
           res.status(400).json({ message: "Title is too long 😬" });
         }
@@ -174,11 +181,14 @@ router.post(
   isAuthenticated,
   async (req, res) => {
     try {
-      const { quantity, brand, shop, price } = req.fields;
+      const { quantity, measure, brand, shop, price } = req.fields;
       const nameProduct = req.fields.nameProduct.toLowerCase();
 
       const idList = req.params.id;
-      const shoppingList = await lists.findById(idList).populate("products");
+      const shoppingList = await lists
+        .findById(idList)
+        .populate("products.reference");
+      const productsInShoppingList = shoppingList.products;
       const user = req.user;
 
       // Add function because code asynchrone
@@ -191,30 +201,62 @@ router.post(
         }
       };
 
+      // Add function because code asynchrone
+      const checkProductInShoppingList = () => {
+        // Check if the product is  present in shoppingList
+        for (let i in productsInShoppingList) {
+          if (productsInShoppingList[i].reference.name === nameProduct) {
+            return i;
+          }
+        }
+      };
+
       // Function Add Product
-      const addProduct = async (productAlreadyInDB) => {
+      const addProduct = async (productAlreadyInDB, positionProduct) => {
         if (shoppingList) {
           if (nameProduct) {
             if (nameProduct.length <= 30) {
               if (productAlreadyInDB) {
-                // Product exist in user's products database
-                const productToAddList = await products.findOne({
-                  name: nameProduct,
-                });
+                // Product is already in shopping list and it's a quick add, increment 1
+                if (
+                  positionProduct &&
+                  nameProduct &&
+                  !quantity &&
+                  !brand &&
+                  !shop &&
+                  !price
+                ) {
+                  productsInShoppingList[positionProduct].quantity
+                    ? (productsInShoppingList[positionProduct].quantity =
+                        Number(
+                          productsInShoppingList[positionProduct].quantity
+                        ) + 1)
+                    : (productsInShoppingList[positionProduct].quantity = 2);
+                  await shoppingList.save();
+                  res
+                    .status(200)
+                    .json({ message: "Product added to your shopping list" }); // A compléter avec les éléments dont le front aura besoin
+                } else {
+                  // Product exist in user's products database
+                  const productToAddList = await products.findOne({
+                    name: nameProduct,
+                  });
 
-                // Add product to shoppingList (array)
-                shoppingList.products.push({
-                  reference: productToAddList,
-                  quantity: quantity && quantity,
-                  brand: brand && brand,
-                  shop: shop && shop,
-                  price: price && price,
-                  added: false,
-                });
-                await shoppingList.save();
-                res
-                  .status(200)
-                  .json({ message: "Product added to your shopping list" }); // A compléter avec les éléments dont le front aura besoin
+                  // Add product to shoppingList (array)
+                  shoppingList.products.push({
+                    reference: productToAddList,
+                    quantity: quantity && quantity,
+                    measure: measure ? measure : "Unité",
+                    brand: brand && brand,
+                    shop: shop && shop,
+                    price: price && price,
+                    added: false,
+                  });
+                  await shoppingList.save();
+                  res
+                    .status(200)
+                    .json({ message: "Product added to your shopping list" }); // A compléter avec les éléments dont le front aura besoin
+                }
               } else {
                 // Check if the product is already present in products database
                 let productToAdd = await products.findOne({
@@ -243,6 +285,7 @@ router.post(
                 shoppingList.products.push({
                   reference: productToAdd,
                   quantity: quantity && quantity,
+                  measure: measure ? measure : "Unité",
                   brand: brand && brand,
                   shop: shop && shop,
                   price: price && price,
@@ -275,7 +318,11 @@ router.post(
       };
 
       // Call function async with callback
-      funcAsync(checkProductInDBUser, addProduct);
+      funcAsyncWithTwoParams(
+        checkProductInDBUser,
+        checkProductInShoppingList,
+        addProduct
+      );
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
@@ -291,7 +338,8 @@ router.put(
   isAuthenticated,
   async (req, res) => {
     try {
-      const { nameProduct, quantity, brand, shop, price, added } = req.fields;
+      const { nameProduct, measure, quantity, brand, shop, price, added } =
+        req.fields;
       const { idProduct } = req.query;
       const idList = req.params.id;
       const shoppingList = await lists.findById(idList);
@@ -321,6 +369,9 @@ router.put(
               productsInShoppingList[positionProduct].quantity = quantity
                 ? quantity
                 : "";
+              productsInShoppingList[positionProduct].measure = measure
+                ? measure
+                : "Unité";
               productsInShoppingList[positionProduct].brand = brand
                 ? brand
                 : "";
@@ -433,6 +484,31 @@ router.delete(
   }
 );
 
+// 5. Route GET to get infos of one product in a list
+router.get("/lists/infos-product/:id", isAuthenticated, async (req, res) => {
+  try {
+    const { idProduct } = req.query;
+    const idList = req.params.id;
+    const shoppingList = await lists
+      .findById(idList)
+      .populate("products.reference");
+    for (let i of shoppingList.products) {
+      // console.log(i);
+      if (i.id === idProduct) {
+        const productInfos = i;
+        console.log(productInfos);
+        res.status(200).json(productInfos);
+      }
+    }
+    // console.log(shoppingList);
+    // const productInfos = await shoppingList.products.findById(idProduct);
+    // console.log(productInfos);
+    // res.status(200).json(productInfos);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 /* =================================================== */
 /* =================================================== */
 /* ============     ROUTES PAULINE     ================ */
@@ -448,7 +524,6 @@ router.get("/lists/:userId", isAuthenticated, async (req, res) => {
       // Check if ID in params corresponds to a user
       const user = await users
         .findById(req.params.userId)
-
         .populate({ path: "lists", populate: { path: "products.reference" } })
         // .populate("lists")
         .populate("products");
@@ -499,6 +574,27 @@ router.get("/listcontent/:listId", isAuthenticated, async (req, res) => {
       }
     } else {
       res.status(400).json({ error: "Missing list Id" });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/* =================================================== */
+// Route to get info about a list
+/* =================================================== */
+router.get("/list/:id", isAuthenticated, async (req, res) => {
+  try {
+    if (req.params.id) {
+      const shoppingList = await lists.findById(req.params.id);
+
+      if (shoppingList) {
+        res.status(200).json(shoppingList);
+      } else {
+        res.status(400).json({ message: "This List doesn't exist." });
+      }
+    } else {
+      res.status(400).json({ message: "Please send a list ID." });
     }
   } catch (error) {
     res.status(400).json({ error: error.message });

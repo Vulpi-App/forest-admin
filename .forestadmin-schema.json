@@ -64,6 +64,9 @@
           "field": "quantity",
           "type": "String"
         }, {
+          "field": "measure",
+          "type": "String"
+        }, {
           "field": "brand",
           "type": "String"
         }, {

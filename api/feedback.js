@@ -13,11 +13,11 @@ const { users, lists, products, feedbacks } = require("../models");
 router.post(
   "/feedback/create/:userId",
   formidable(),
-  isAuthenticated,
+
   async (req, res) => {
     try {
       const { subject, description } = req.fields;
-      const userId = req.params.userId;
+      //const userId = req.params.userId;
 
       if (subject && description) {
         if (subject.length <= 30) {
@@ -25,7 +25,7 @@ router.post(
           const newFeedback = new feedbacks({
             subject: subject,
             description: description,
-            owner: userId,
+            // owner: userId,
             processed: false,
           });
 

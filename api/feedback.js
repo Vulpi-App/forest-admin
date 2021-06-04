@@ -36,7 +36,7 @@ router.post(
           res.status(201).json({ message: "Feedback successfully created." });
         } else {
           res.status(400).json({
-            error: "The subject must have a meximum of 30 characters.",
+            error: "The subject must have a maximum of 30 characters.",
           });
         }
       }

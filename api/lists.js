@@ -37,22 +37,24 @@ cloudinary.config({
 /* =================================================== */
 
 // 1. CREATE a shopping list ✅
+/*
+URL: /lists/create
+Method: POST
+Params: No
+Query: No
+Body: title, emoji
+Token: (Cf. Middleware isAuthenticated)
+*/
 router.post(
   "/lists/create",
   formidable(),
   isAuthenticated,
   async (req, res) => {
-    // console.log(req.user);
-    // console.log(req.user._id);
-
     try {
       const { title, emoji } = req.fields;
 
-      // title & emoji already filled in create list step (so mandatory)
-      // 🚨 TO FIX - Find a way to limit to only 1 emoji!
       if (title && emoji) {
         if (title.length <= 30) {
-
           if (emoji.length <= 2) {
             const newList = new lists({
               title: title,
@@ -73,7 +75,6 @@ router.post(
           } else {
             res.status(400).json({ message: "Only 1 emoji is authorized 🙊" });
           }
-
         } else {
           res.status(400).json({ message: "Title is too long 😬" });
         }
@@ -86,9 +87,15 @@ router.post(
   }
 );
 
-/* =================================================== */
-
 // 2. UPDATE shopping list: title & emoji ✅
+/*
+URL: /lists/update/:id
+Method: PUT
+Params: id
+Query: No
+Body: title, emoji
+Token: (Cf. Middleware isAuthenticated)
+*/
 router.put(
   "/lists/update/:id",
   formidable(),
@@ -127,9 +134,15 @@ router.put(
   }
 );
 
-/* =================================================== */
-
 // 3. DELETE a shopping list ✅
+/*
+URL: /lists/delete/:id/:userId
+Method: DELETE
+Params: id, userId
+Query: No
+Body: No
+Token: (Cf. Middleware isAuthenticated)
+*/
 router.delete(
   "/lists/delete/:id/:userId",
   isAuthenticated,
@@ -138,7 +151,6 @@ router.delete(
       if (req.params.userId && req.params.id) {
         // Looking for user who want to delete the list & populate all his lists
         const user = await users.findById(req.params.userId).populate("lists");
-        // console.log(user);
 
         // Looking for a list with corresponding ID in BDD
         const listToDelete = await lists.findById(req.params.id);

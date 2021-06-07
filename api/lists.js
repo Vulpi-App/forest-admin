@@ -30,7 +30,17 @@ cloudinary.config({
 
 /* =================================================== */
 
-// CREATE a shopping list ✅
+
+// 1. CREATE a shopping list ✅
+/*
+URL: /lists/create
+Method: POST
+Params: No
+Query: No
+Body: title, emoji
+Token: (Cf. Middleware isAuthenticated)
+*/
+
 router.post(
   "/lists/create",
   formidable(),
@@ -39,8 +49,6 @@ router.post(
     try {
       const { title, emoji } = req.fields;
 
-      // title & emoji already filled in create list step (so mandatory)
-      // 🚨 TO FIX - Find a way to limit to only 1 emoji!
       if (title && emoji) {
         if (title.length <= 30) {
           if (emoji.length <= 2) {
@@ -75,9 +83,17 @@ router.post(
   }
 );
 
-/* =================================================== */
 
-// UPDATE shopping list: title & emoji ✅
+// 2. UPDATE shopping list: title & emoji ✅
+/*
+URL: /lists/update/:id
+Method: PUT
+Params: id
+Query: No
+Body: title, emoji
+Token: (Cf. Middleware isAuthenticated)
+*/
+
 router.put(
   "/lists/update/:id",
   formidable(),
@@ -116,9 +132,18 @@ router.put(
   }
 );
 
-/* =================================================== */
 
-// DELETE a shopping list ✅
+// 3. DELETE a shopping list ✅
+/*
+URL: /lists/delete/:id/:userId
+Method: DELETE
+Params: id, userId
+Query: No
+Body: No
+Token: (Cf. Middleware isAuthenticated)
+*/
+
+
 router.delete(
   "/lists/delete/:id/:userId",
   isAuthenticated,

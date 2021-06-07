@@ -1,3 +1,4 @@
+// Import packages and middlewares
 const express = require("express");
 const formidable = require("express-formidable");
 const router = express.Router();
@@ -5,21 +6,23 @@ const uid2 = require("uid2");
 const SHA256 = require("crypto-js/sha256");
 const encBase64 = require("crypto-js/enc-base64");
 const cloudinary = require("cloudinary").v2;
+const isAuthenticated = require("./middleware/isAuthenticated");
 
+// Configuration cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Import models
 const { users, products, lists } = require("../models");
-const isAuthenticated = require("./middleware/isAuthenticated");
-
-// Pas de app.use("formidable") si cette syntaxe : router.get("/api/users", formidable(), async (req, res) => {
 
 /* =================================================== */
+
+/* =================================================== */
+
 // Route Sign Up with email
-/* =================================================== */
 router.post("/user/signup", formidable(), async (req, res) => {
   try {
     // Destructuring of req.fields
@@ -88,8 +91,8 @@ router.post("/user/signup", formidable(), async (req, res) => {
 });
 
 /* =================================================== */
+
 // Route Log In with email
-/* =================================================== */
 router.post("/user/login", formidable(), async (req, res) => {
   try {
     //  Destructuring of req.fields
@@ -127,8 +130,8 @@ router.post("/user/login", formidable(), async (req, res) => {
 });
 
 /* =================================================== */
+
 // Route to delete a user
-/* =================================================== */
 router.delete(
   "/user/delete/:id",
   formidable(),
@@ -177,8 +180,8 @@ router.delete(
 );
 
 /* =================================================== */
+
 // Route to modify a user
-/* =================================================== */
 router.put(
   "/user/update/:id",
   formidable(),
@@ -323,8 +326,8 @@ router.put(
 );
 
 /* =================================================== */
+
 // Route to Authenticate with Apple
-/* =================================================== */
 router.post("/user/appleauth", formidable(), async (req, res) => {
   try {
     const { appleId, firstName, lastName, email } = req.fields;
@@ -421,8 +424,8 @@ router.post("/user/appleauth", formidable(), async (req, res) => {
 });
 
 /* =================================================== */
+
 // Route to get info about a user
-/* =================================================== */
 router.get("/user/:userId", isAuthenticated, async (req, res) => {
   try {
     if (req.params.userId) {
@@ -460,9 +463,8 @@ router.get("/user/:userId", isAuthenticated, async (req, res) => {
 });
 
 /* =================================================== */
-// Route to get all users
-/* =================================================== */
 
+// Route to get all users
 router.get("/users", formidable(), async (req, res) => {
   try {
     const usersList = await users.find();

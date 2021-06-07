@@ -9,6 +9,10 @@ const isAuthenticated = require("./middleware/isAuthenticated");
 // Import models
 const { users, lists, products, feedbacks } = require("../models");
 
+/* =================================================== */
+
+/* =================================================== */
+
 // Route to create a new feedback in DB
 router.post(
   "/feedback/create/:userId",

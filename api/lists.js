@@ -29,22 +29,13 @@ cloudinary.config({
 /* =================================================== */
 
 /* =================================================== */
-/* =================================================== */
-/* ============     ROUTES MANON 🌺   ================ */
-/* =================================================== */
-/* =================================================== */
 
-/* =================================================== */
-
-// 1. CREATE a shopping list ✅
+// CREATE a shopping list ✅
 router.post(
   "/lists/create",
   formidable(),
   isAuthenticated,
   async (req, res) => {
-    // console.log(req.user);
-    // console.log(req.user._id);
-
     try {
       const { title, emoji } = req.fields;
 
@@ -52,7 +43,6 @@ router.post(
       // 🚨 TO FIX - Find a way to limit to only 1 emoji!
       if (title && emoji) {
         if (title.length <= 30) {
-
           if (emoji.length <= 2) {
             const newList = new lists({
               title: title,
@@ -73,7 +63,6 @@ router.post(
           } else {
             res.status(400).json({ message: "Only 1 emoji is authorized 🙊" });
           }
-
         } else {
           res.status(400).json({ message: "Title is too long 😬" });
         }
@@ -88,7 +77,7 @@ router.post(
 
 /* =================================================== */
 
-// 2. UPDATE shopping list: title & emoji ✅
+// UPDATE shopping list: title & emoji ✅
 router.put(
   "/lists/update/:id",
   formidable(),
@@ -129,7 +118,7 @@ router.put(
 
 /* =================================================== */
 
-// 3. DELETE a shopping list ✅
+// DELETE a shopping list ✅
 router.delete(
   "/lists/delete/:id/:userId",
   isAuthenticated,
@@ -138,7 +127,6 @@ router.delete(
       if (req.params.userId && req.params.id) {
         // Looking for user who want to delete the list & populate all his lists
         const user = await users.findById(req.params.userId).populate("lists");
-        // console.log(user);
 
         // Looking for a list with corresponding ID in BDD
         const listToDelete = await lists.findById(req.params.id);
@@ -169,12 +157,8 @@ router.delete(
 );
 
 /* =================================================== */
-/* =================================================== */
-/* ============     ROUTES BRAHIM     ================ */
-/* =================================================== */
-/* =================================================== */
 
-// 4. Route POST to add a product to a list
+// Route POST to add a product to a list
 router.post(
   "/lists/add-product/:id",
   formidable(),
@@ -271,7 +255,6 @@ router.post(
 
                   // If picture is present, add to product in database and to Cloundinary
                   if (req.files.picture) {
-                    console.log(req.files.picture);
                     const pictureProduct = await cloudinary.uploader.upload(
                       req.files.picture.path,
                       { folder: `vulpi/products/${productToAdd.id}` }
@@ -331,7 +314,7 @@ router.post(
 
 /* =================================================== */
 
-// 5. Route PUT to update a product to a list
+// Route PUT to update a product to a list
 router.put(
   "/lists/update-product/:id",
   formidable(),
@@ -387,7 +370,6 @@ router.put(
                 const productToUpdate = await products.findById(
                   productsInShoppingList[positionProduct].reference
                 );
-                // console.log(productsInShoppingList[positionProduct].reference);
 
                 productToUpdate.picture = await cloudinary.uploader.upload(
                   req.files.picture.path,
@@ -432,7 +414,7 @@ router.put(
 
 /* =================================================== */
 
-// 5. Route DELETE to delete a product to a list
+// Route DELETE to delete a product to a list
 router.delete(
   "/lists/delete-product/:id",
   isAuthenticated,
@@ -484,7 +466,7 @@ router.delete(
   }
 );
 
-// 5. Route GET to get infos of one product in a list
+// Route GET to get infos of one product in a list
 router.get("/lists/infos-product/:id", isAuthenticated, async (req, res) => {
   try {
     const { idProduct } = req.query;
@@ -493,31 +475,20 @@ router.get("/lists/infos-product/:id", isAuthenticated, async (req, res) => {
       .findById(idList)
       .populate("products.reference");
     for (let i of shoppingList.products) {
-      // console.log(i);
       if (i.id === idProduct) {
         const productInfos = i;
-        console.log(productInfos);
+
         res.status(200).json(productInfos);
       }
     }
-    // console.log(shoppingList);
-    // const productInfos = await shoppingList.products.findById(idProduct);
-    // console.log(productInfos);
-    // res.status(200).json(productInfos);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
 
 /* =================================================== */
-/* =================================================== */
-/* ============     ROUTES PAULINE     ================ */
-/* =================================================== */
-/* =================================================== */
 
-/* =================================================== */
 // Route to get All lists of a user
-/* =================================================== */
 router.get("/lists/:userId", isAuthenticated, async (req, res) => {
   try {
     if (req.params.userId) {
@@ -527,9 +498,6 @@ router.get("/lists/:userId", isAuthenticated, async (req, res) => {
         .populate({ path: "lists", populate: { path: "products.reference" } })
         // .populate("lists")
         .populate("products");
-
-      // console.log(user);
-      // console.log(user.lists);
 
       if (user) {
         // Check if the token of userToUpdate is the same as the one sent in the headers
@@ -553,11 +521,10 @@ router.get("/lists/:userId", isAuthenticated, async (req, res) => {
 });
 
 /* =================================================== */
+
 // Route to get products in a given list
-/* =================================================== */
 router.get("/listcontent/:listId", isAuthenticated, async (req, res) => {
   try {
-    console.log(req.params.listId);
     if (req.params.listId) {
       const listWithId = await lists
         .findById(req.params.listId)
@@ -582,7 +549,6 @@ router.get("/listcontent/:listId", isAuthenticated, async (req, res) => {
 
 /* =================================================== */
 // Route to get info about a list
-/* =================================================== */
 router.get("/list/:id", isAuthenticated, async (req, res) => {
   try {
     if (req.params.id) {
@@ -596,19 +562,6 @@ router.get("/list/:id", isAuthenticated, async (req, res) => {
     } else {
       res.status(400).json({ message: "Please send a list ID." });
     }
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-/* =================================================== */
-// Route to get All lists in DB
-/* =================================================== */
-router.get("/lists", async (req, res) => {
-  try {
-    const shoppingLists = await lists.find();
-
-    res.status(200).json(shoppingLists);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

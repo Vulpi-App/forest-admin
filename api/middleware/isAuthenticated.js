@@ -1,5 +1,10 @@
 const { users, products, lists } = require("../../models");
 
+/* =================================================== */
+
+/* =================================================== */
+
+// Middleware to authenticate the user
 const isAuthenticated = async (req, res, next) => {
   try {
     // Check if token sent
